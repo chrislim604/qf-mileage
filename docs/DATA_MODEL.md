@@ -33,4 +33,6 @@ ERPNext integration remains contract-first until the real ERPNext instance exist
 
 ## Local MVP Storage
 
-The Android v0.2.0 MVP stores `LedgerSnapshot` data in a private JSON file. This is intentionally simple and local-only. The next persistence upgrade can move the same records into SQLDelight or Room without changing the shared core concepts.
+The Android v0.3.0 MVP stores `LedgerSnapshot` data in a private JSON file. This is intentionally simple and local-only. The next persistence upgrade can move the same records into SQLDelight or Room without changing the shared core concepts.
+
+If the local JSON file cannot be parsed, the app preserves it as a timestamped `.corrupt-...json` file and starts with a clean default ledger instead of crashing on launch.

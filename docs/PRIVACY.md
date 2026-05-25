@@ -6,7 +6,7 @@ QF Mileage handles sensitive location history, vehicle, business-destination, ad
 
 Trip data stays on the device unless the user explicitly exports it, backs it up, or later configures ERPNext sync.
 
-The v0.2.0 MVP stores manual trips and vehicles in private Android app storage and writes CSV exports only when the user taps export.
+The v0.3.0 MVP stores manual trips and vehicles in private Android app storage and writes CSV or JSON backup files only when the user taps a share/export action.
 
 ## Location History
 

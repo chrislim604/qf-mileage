@@ -41,6 +41,24 @@ class TripLedgerServiceTest {
         assertTrue(csv.contains("Work vehicle"))
     }
 
+    @Test
+    fun reviewActionsCanClassifyAndDeleteTrips() {
+        val snapshot = LedgerSnapshot(trips = listOf(trip("1", 8.0, TripPurpose.NeedsReview)))
+
+        val classified = TripLedgerService.updateTripPurpose(
+            snapshot = snapshot,
+            tripId = "1",
+            purpose = TripPurpose.Business,
+            reviewNote = "Client visit"
+        )
+
+        assertEquals(TripPurpose.Business, classified.trips.single().purpose)
+        assertEquals("Client visit", classified.trips.single().adjustmentNote)
+
+        val empty = TripLedgerService.deleteTrip(classified, "1")
+        assertEquals(0, empty.trips.size)
+    }
+
     private fun trip(
         id: String,
         kilometres: Double,

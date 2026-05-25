@@ -19,7 +19,12 @@ class LocalLedgerStore(context: Context) {
             return LedgerSnapshot(vehicles = listOf(defaultVehicle()))
         }
 
-        val root = JSONObject(file.readText())
+        val root = try {
+            JSONObject(file.readText())
+        } catch (error: Exception) {
+            recoverCorruptLedger()
+            return LedgerSnapshot(vehicles = listOf(defaultVehicle()))
+        }
         val vehicles = root.optJSONArray("vehicles").toVehicles()
         val trips = root.optJSONArray("trips").toTrips()
 
@@ -30,16 +35,24 @@ class LocalLedgerStore(context: Context) {
     }
 
     fun save(snapshot: LedgerSnapshot) {
-        val root = JSONObject()
-            .put("vehicles", snapshot.vehicles.toJsonVehicles())
-            .put("trips", snapshot.trips.toJsonTrips())
-        file.writeText(root.toString(2))
+        file.writeText(snapshot.toJson().toString(2))
     }
 
     fun exportCsv(csv: String): File {
         val export = File(file.parentFile, "qf-mileage-logbook.csv")
         export.writeText(csv)
         return export
+    }
+
+    fun exportBackup(snapshot: LedgerSnapshot): File {
+        val export = File(file.parentFile, "qf-mileage-backup.json")
+        export.writeText(snapshot.toJson().toString(2))
+        return export
+    }
+
+    private fun recoverCorruptLedger() {
+        val recovered = File(file.parentFile, "qf-mileage-ledger.corrupt-${System.currentTimeMillis()}.json")
+        file.renameTo(recovered)
     }
 
     private fun defaultVehicle() = Vehicle(
@@ -116,5 +129,11 @@ class LocalLedgerStore(context: Context) {
             )
         }
         return array
+    }
+
+    private fun LedgerSnapshot.toJson(): JSONObject {
+        return JSONObject()
+            .put("vehicles", vehicles.toJsonVehicles())
+            .put("trips", trips.toJsonTrips())
     }
 }

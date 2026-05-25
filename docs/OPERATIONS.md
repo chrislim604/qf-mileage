@@ -41,10 +41,12 @@ The planned backup model is encrypted app-managed archives in Google Drive `appD
 
 ## Local Ledger Files
 
-The v0.2.0 Android MVP writes:
+The v0.3.0 Android MVP writes:
 
 - `qf-mileage-ledger.json` for private app ledger storage.
-- `qf-mileage-logbook.csv` when the user exports the current ledger.
+- `qf-mileage-logbook.csv` when the user shares the current CSV logbook.
+- `qf-mileage-backup.json` when the user shares the current JSON backup.
+- `qf-mileage-ledger.corrupt-<timestamp>.json` when a malformed ledger file is recovered.
 
 Both files are in Android private app storage during the debug MVP.
 

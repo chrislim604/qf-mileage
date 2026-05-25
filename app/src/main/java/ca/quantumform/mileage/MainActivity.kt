@@ -1,5 +1,7 @@
 package ca.quantumform.mileage
 
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -29,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import ca.quantumform.mileage.core.AppEntitlement
 import ca.quantumform.mileage.core.CsvMileageExporter
 import ca.quantumform.mileage.core.LedgerSnapshot
@@ -38,6 +41,7 @@ import ca.quantumform.mileage.core.TripLeg
 import ca.quantumform.mileage.core.TripPurpose
 import ca.quantumform.mileage.core.TripSource
 import ca.quantumform.mileage.core.Vehicle
+import java.io.File
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 
@@ -46,18 +50,30 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val store = LocalLedgerStore(this)
         setContent {
-            QfMileageApp(store = store)
+            QfMileageApp(
+                store = store,
+                shareFile = { file, mimeType -> shareFile(file, mimeType) }
+            )
         }
+    }
+
+    private fun shareFile(file: File, mimeType: String) {
+        val uri: Uri = FileProvider.getUriForFile(this, "${BuildConfig.APPLICATION_ID}.files", file)
+        val intent = Intent(Intent.ACTION_SEND)
+            .setType(mimeType)
+            .putExtra(Intent.EXTRA_STREAM, uri)
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        startActivity(Intent.createChooser(intent, "Share QF Mileage export"))
     }
 }
 
 @Composable
-private fun QfMileageApp(store: LocalLedgerStore) {
+private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> Unit) {
     var snapshot by remember { mutableStateOf(store.load()) }
-    var exportedPath by remember { mutableStateOf<String?>(null) }
+    var exportMessage by remember { mutableStateOf<String?>(null) }
     val status = MileageAppStatus(
         displayName = "QF Mileage",
-        version = "0.2.0",
+        version = BuildConfig.VERSION_NAME,
         entitlement = AppEntitlement.FreeWithAds
     )
 
@@ -78,10 +94,33 @@ private fun QfMileageApp(store: LocalLedgerStore) {
                 SummaryPanel(snapshot)
                 AddVehiclePanel(snapshot) { persist(TripLedgerService.upsertVehicle(snapshot, it)) }
                 AddTripPanel(snapshot) { persist(TripLedgerService.upsertTrip(snapshot, it)) }
-                ReviewQueue(snapshot)
-                TripList(snapshot)
-                ExportPanel(exportedPath = exportedPath) {
-                    exportedPath = store.exportCsv(CsvMileageExporter.export(snapshot)).absolutePath
+                ReviewQueue(
+                    snapshot = snapshot,
+                    onClassify = { tripId, purpose ->
+                        persist(
+                            TripLedgerService.updateTripPurpose(
+                                snapshot = snapshot,
+                                tripId = tripId,
+                                purpose = purpose,
+                                reviewNote = "Reviewed in QF Mileage"
+                            )
+                        )
+                    },
+                    onDelete = { persist(TripLedgerService.deleteTrip(snapshot, it)) }
+                )
+                TripList(
+                    snapshot = snapshot,
+                    onDelete = { persist(TripLedgerService.deleteTrip(snapshot, it)) }
+                )
+                ExportPanel(exportMessage = exportMessage) {
+                    val csvFile = store.exportCsv(CsvMileageExporter.export(snapshot))
+                    shareFile(csvFile, "text/csv")
+                    exportMessage = "CSV ready: ${csvFile.name}"
+                }
+                BackupPanel(exportMessage = exportMessage) {
+                    val backupFile = store.exportBackup(snapshot)
+                    shareFile(backupFile, "application/json")
+                    exportMessage = "Backup ready: ${backupFile.name}"
                 }
             }
         }
@@ -221,7 +260,11 @@ private fun PurposeButtons(purpose: TripPurpose, onChange: (TripPurpose) -> Unit
 }
 
 @Composable
-private fun ReviewQueue(snapshot: LedgerSnapshot) {
+private fun ReviewQueue(
+    snapshot: LedgerSnapshot,
+    onClassify: (String, TripPurpose) -> Unit,
+    onDelete: (String) -> Unit
+) {
     val reviewTrips = snapshot.trips.filter { it.purpose == TripPurpose.NeedsReview || it.purpose == TripPurpose.Mixed }
     Section(title = "Review queue") {
         if (reviewTrips.isEmpty()) {
@@ -230,6 +273,17 @@ private fun ReviewQueue(snapshot: LedgerSnapshot) {
             reviewTrips.forEach {
                 Text("${it.originLabel} to ${it.destinationLabel} - ${it.kilometres} km - ${it.purpose.name}")
                 Text("Note: ${it.adjustmentNote ?: it.evidenceNote}")
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Button(onClick = { onClassify(it.id, TripPurpose.Business) }) {
+                        Text("Business")
+                    }
+                    Button(onClick = { onClassify(it.id, TripPurpose.Personal) }) {
+                        Text("Personal")
+                    }
+                    Button(onClick = { onDelete(it.id) }) {
+                        Text("Delete")
+                    }
+                }
                 Spacer(Modifier.height(6.dp))
             }
         }
@@ -237,7 +291,7 @@ private fun ReviewQueue(snapshot: LedgerSnapshot) {
 }
 
 @Composable
-private fun TripList(snapshot: LedgerSnapshot) {
+private fun TripList(snapshot: LedgerSnapshot, onDelete: (String) -> Unit) {
     Section(title = "Trip ledger") {
         if (snapshot.trips.isEmpty()) {
             Text("No trips yet.")
@@ -246,6 +300,9 @@ private fun TripList(snapshot: LedgerSnapshot) {
                 val vehicleName = snapshot.vehicles.firstOrNull { vehicle -> vehicle.id == it.vehicleId }?.displayName ?: "No vehicle"
                 Text("${it.startedAt.toString().take(10)} - ${it.originLabel} to ${it.destinationLabel}")
                 Text("${it.kilometres} km - ${vehicleName} - ${it.purpose.name} - ${it.source.name}")
+                Button(onClick = { onDelete(it.id) }) {
+                    Text("Delete trip")
+                }
                 Spacer(Modifier.height(8.dp))
             }
         }
@@ -253,14 +310,27 @@ private fun TripList(snapshot: LedgerSnapshot) {
 }
 
 @Composable
-private fun ExportPanel(exportedPath: String?, onExport: () -> Unit) {
+private fun ExportPanel(exportMessage: String?, onExport: () -> Unit) {
     Section(title = "Export") {
-        Text("Generate a local CRA-style CSV logbook from the current ledger.")
+        Text("Generate and share a CRA-style CSV logbook from the current ledger.")
         Button(onClick = onExport) {
-            Text("Export CSV")
+            Text("Share CSV")
         }
-        exportedPath?.let {
-            Text("Saved to $it")
+        exportMessage?.let {
+            Text(it)
+        }
+    }
+}
+
+@Composable
+private fun BackupPanel(exportMessage: String?, onExport: () -> Unit) {
+    Section(title = "Backup") {
+        Text("Generate and share a local JSON backup of the current private ledger.")
+        Button(onClick = onExport) {
+            Text("Share JSON backup")
+        }
+        exportMessage?.let {
+            Text(it)
         }
     }
 }
