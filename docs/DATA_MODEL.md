@@ -10,6 +10,7 @@ The data model keeps the internal trip ledger canonical so exports and ERPNext i
 - RouteDistanceResult: driven-distance calculation, provider, confidence, and evidence summary.
 - BackupManifest: schema version, creation time, encryption flag, and record counts.
 - Entitlement: `FreeWithAds`, `FreeAdRemoved`, or `PaidAdFree`.
+- LedgerSnapshot: the local collection of vehicles, places, and trips.
 
 ## Evidence Rules
 
@@ -29,3 +30,7 @@ Mixed or adjusted trips require user notes before export. The app is a decision-
 ## ERPNext Boundary
 
 ERPNext integration remains contract-first until the real ERPNext instance exists. The internal ledger should be able to export Expense Claim-style records first, with Vehicle Log support added later if useful.
+
+## Local MVP Storage
+
+The Android v0.2.0 MVP stores `LedgerSnapshot` data in a private JSON file. This is intentionally simple and local-only. The next persistence upgrade can move the same records into SQLDelight or Room without changing the shared core concepts.

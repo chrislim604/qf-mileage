@@ -19,6 +19,7 @@ if (command === "bump") {
   const next = bump(pkg.version, level);
   pkg.version = next;
   writeJson("package.json", pkg);
+  updatePackageLock(next);
   replace("app/build.gradle.kts", /versionName = "\d+\.\d+\.\d+"/, `versionName = "${next}"`);
   appendChangelog(next, level);
   console.log(`Version bumped to ${next}.`);
@@ -26,6 +27,12 @@ if (command === "bump") {
 }
 
 const pkgVersion = readJson("package.json").version;
+if (fs.existsSync(path.join(root, "package-lock.json"))) {
+  const lock = readJson("package-lock.json");
+  if (lock.version !== pkgVersion || lock.packages?.[""]?.version !== pkgVersion) {
+    fail(`package-lock.json version must match package.json ${pkgVersion}.`);
+  }
+}
 const appBuild = read("app/build.gradle.kts");
 if (!appBuild.includes(`versionName = "${pkgVersion}"`)) {
   fail(`app/build.gradle.kts versionName must match package.json ${pkgVersion}.`);
@@ -67,6 +74,17 @@ function writeJson(file, value) {
 function replace(file, pattern, replacement) {
   const target = path.join(root, file);
   fs.writeFileSync(target, fs.readFileSync(target, "utf8").replace(pattern, replacement));
+}
+
+function updatePackageLock(version) {
+  const lockPath = path.join(root, "package-lock.json");
+  if (!fs.existsSync(lockPath)) return;
+  const lock = readJson("package-lock.json");
+  lock.version = version;
+  if (lock.packages?.[""]) {
+    lock.packages[""].version = version;
+  }
+  writeJson("package-lock.json", lock);
 }
 
 function bump(version, type) {

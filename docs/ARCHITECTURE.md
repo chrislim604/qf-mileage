@@ -5,7 +5,7 @@ QF Mileage is Android-first, iOS-ready, and local-first.
 ## Modules
 
 - `shared`: Kotlin Multiplatform core for mileage domain logic, CRA review rules, route-provider contracts, backup contracts, entitlement state, and ERPNext export contracts.
-- `app`: Native Android shell using Jetpack Compose and platform adapters.
+- `app`: Native Android shell using Jetpack Compose, a file-backed local ledger store, and platform adapters.
 
 The shared core must not depend on Android, Google Play, AdMob, Google Drive, Bluetooth, Activity Recognition, or ERPNext SDKs directly.
 
@@ -13,6 +13,7 @@ The shared core must not depend on Android, Google Play, AdMob, Google Drive, Bl
 
 Android adapters planned after the scaffold:
 
+- File-backed local ledger store for the v0.2.0 MVP.
 - Google Maps Timeline import parser.
 - Google Routes distance provider.
 - Google Drive `appDataFolder` encrypted backup repository.
@@ -38,6 +39,8 @@ Future iOS adapters:
 4. Put trip into the review queue.
 5. User approves purpose, treatment, notes, and claimable distance.
 6. Export CRA-style evidence, create encrypted backup, or sync to ERPNext later.
+
+The v0.2.0 implementation supports manual entry, local persistence, review visibility, and local CSV export. Timeline import, route reconstruction, Drive backup, ads, billing, and ERPNext sync remain adapter work after this vertical slice.
 
 ## Privacy Boundary
 

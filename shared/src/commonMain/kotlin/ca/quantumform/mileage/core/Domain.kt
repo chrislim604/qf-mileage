@@ -120,3 +120,10 @@ data class BackupManifest(
     val vehicleCount: Int,
     val placeCount: Int
 )
+
+@Serializable
+data class LedgerSnapshot(
+    val vehicles: List<Vehicle> = emptyList(),
+    val places: List<PlaceTag> = emptyList(),
+    val trips: List<TripLeg> = emptyList()
+)

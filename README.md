@@ -9,13 +9,15 @@ The launcher name is intentionally short: `QF Mileage`. The planned public store
 
 ## Current Status
 
-Version `0.1.0` is the initial source-available scaffold. It establishes:
+Version `0.2.0` is the local trip ledger MVP. It establishes:
 
 - Kotlin Multiplatform shared core for mileage rules and future portability.
 - Native Android app shell with free and paid product flavors.
 - CRA-style review decision logic.
 - Backup, route provider, and ERPNext export contracts.
 - Public-repo documentation, versioning, GitHub templates, and release hygiene.
+- File-backed on-device trip ledger storage.
+- Android screens for vehicles, manual trips, review queue, trip list, and CSV export.
 
 The app is not store-ready yet. It does not yet connect to live Google Routes, Google Drive, AdMob, Google Play Billing, ERPNext, or Google Maps Timeline imports.
 
@@ -24,6 +26,8 @@ The app is not store-ready yet. It does not yet connect to live Google Routes, G
 MVP capabilities:
 
 - Manual trip entry.
+- Local trip and vehicle persistence.
+- Local CRA-style CSV export.
 - Google Maps Timeline-assisted import and review.
 - Google Routes driven-distance reconstruction from start/end/waypoints.
 - Multiple vehicles.
@@ -67,6 +71,10 @@ Full Android builds require a configured Android SDK. On this Mac, Homebrew's co
 ```sh
 ANDROID_HOME=/opt/homebrew/share/android-commandlinetools node scripts/run-gradle.mjs :app:assembleFreeDebug
 ```
+
+## Local Ledger MVP
+
+The Android app currently persists data to `qf-mileage-ledger.json` in private app storage. CSV exports are written to `qf-mileage-logbook.csv` in private app storage. This keeps the first MVP simple and local-first while preserving the future path to SQLDelight/Room, encrypted Drive backups, and ERPNext sync.
 
 ## Versioning
 

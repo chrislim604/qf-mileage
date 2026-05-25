@@ -2,7 +2,7 @@
 
 QF Mileage uses SemVer.
 
-The version source of truth is `package.json`. Android `versionName` in `app/build.gradle.kts` must match.
+The version source of truth is `package.json`. Android `versionName` in `app/build.gradle.kts` and the root entry in `package-lock.json` must match.
 
 ## Bump Rules
 
@@ -22,4 +22,4 @@ npm run version:bump:major
 npm run version:check
 ```
 
-Version bumps should update `package.json`, Android `versionName`, and `CHANGELOG.md`.
+Version bumps should update `package.json`, `package-lock.json`, Android `versionName`, and `CHANGELOG.md`.

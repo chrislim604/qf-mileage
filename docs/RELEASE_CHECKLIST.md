@@ -9,6 +9,7 @@ Before finishing a meaningful change:
 - [ ] `npm run version:check` passes.
 - [ ] `npm test` passes.
 - [ ] Full Android build run when Android platform code changes and the SDK is available.
+- [ ] Manual app smoke test completed when UI workflow changes.
 - [ ] `npm run secrets:scan` passes before public push.
 - [ ] Local git commit created.
 - [ ] GitHub push completed when publishing is requested.

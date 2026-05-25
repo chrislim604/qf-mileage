@@ -1,6 +1,6 @@
 {
   "name": "qf-mileage",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Android-first, iOS-ready mileage ledger for QuantumForm work travel.",
   "type": "module",

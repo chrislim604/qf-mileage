@@ -6,6 +6,8 @@ QF Mileage handles sensitive location history, vehicle, business-destination, ad
 
 Trip data stays on the device unless the user explicitly exports it, backs it up, or later configures ERPNext sync.
 
+The v0.2.0 MVP stores manual trips and vehicles in private Android app storage and writes CSV exports only when the user taps export.
+
 ## Location History
 
 Google Maps Timeline data should be imported through a user-controlled workflow. The app must not assume a hidden public Timeline API or silently upload raw Timeline files.
