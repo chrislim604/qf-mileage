@@ -1,0 +1,31 @@
+# Data Model
+
+The data model keeps the internal trip ledger canonical so exports and ERPNext integrations can evolve without losing evidence.
+
+## Core Records
+
+- Vehicle: display name, optional odometer metadata, and approved Bluetooth device mappings.
+- PlaceTag: user-approved frequent place labels such as Home, Office, Warehouse, Client, Supplier, Personal, or Custom.
+- TripLeg: start/end times, origin/destination labels, kilometres, vehicle, purpose, source, evidence note, and optional adjustment note.
+- RouteDistanceResult: driven-distance calculation, provider, confidence, and evidence summary.
+- BackupManifest: schema version, creation time, encryption flag, and record counts.
+- Entitlement: `FreeWithAds`, `FreeAdRemoved`, or `PaidAdFree`.
+
+## Evidence Rules
+
+Do not replace observed trip evidence with a cleaned-up answer. Preserve:
+
+- original source type;
+- route provider used for reconstruction;
+- confidence;
+- user decisions;
+- adjustment notes;
+- export history when implemented.
+
+## CRA Review Rules
+
+Mixed or adjusted trips require user notes before export. The app is a decision-support ledger, not tax advice.
+
+## ERPNext Boundary
+
+ERPNext integration remains contract-first until the real ERPNext instance exists. The internal ledger should be able to export Expense Claim-style records first, with Vehicle Log support added later if useful.

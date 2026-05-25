@@ -1,0 +1,6 @@
+<full-backup-content>
+    <!-- Keep real trip/location archives out of generic Auto Backup. Encrypted app-managed archives sync through Drive appDataFolder. -->
+    <exclude domain="file" path="exports/" />
+    <exclude domain="file" path="timeline-imports/" />
+    <exclude domain="file" path="real-location-data/" />
+</full-backup-content>

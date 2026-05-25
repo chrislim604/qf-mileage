@@ -1,0 +1,23 @@
+{
+  "name": "qf-mileage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Android-first, iOS-ready mileage ledger for QuantumForm work travel.",
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/run-gradle.mjs build",
+    "test": "node scripts/run-gradle.mjs :shared:allTests",
+    "check": "npm run docs:check && npm run version:check && node scripts/run-gradle.mjs :shared:allTests",
+    "docs:check": "node scripts/check-docs.mjs",
+    "secrets:scan": "gitleaks dir . --no-banner --redact",
+    "version:bump": "node scripts/version.mjs bump patch",
+    "version:bump:major": "node scripts/version.mjs bump major",
+    "version:bump:minor": "node scripts/version.mjs bump minor",
+    "version:bump:patch": "node scripts/version.mjs bump patch",
+    "version:check": "node scripts/version.mjs check",
+    "release:prepare": "node scripts/release-prepare.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "hooks:check": "git config --get core.hooksPath"
+  },
+  "devDependencies": {}
+}
