@@ -37,19 +37,20 @@ Copy `.env.example` to `.env` for local-only configuration. Do not commit `.env`
 
 ## Backups
 
-The planned backup model is encrypted app-managed archives in Google Drive `appDataFolder`, plus Android Auto Backup for small settings/state. Restore must be tested before the backup flow is considered complete.
+The planned backup model is encrypted app-managed archives in Google Drive `appDataFolder`, plus Android Auto Backup for small settings/state. The v0.7.0 debug app can already create and restore the latest local encrypted archive; the remaining adapter work is Drive upload/download.
 
 ## Local Ledger Files
 
-The v0.6.0 Android MVP writes:
+The v0.7.0 Android MVP writes:
 
 - `qf-mileage-ledger.json` for private app ledger storage.
 - `qf-mileage-logbook.csv` when the user shares the current CSV logbook.
-- `qf-mileage-backup.json` when the user shares the current JSON backup.
+- `qf-mileage-backup.json` when the user shares the current debug JSON backup.
+- `qf-mileage-backup.qfmbackup` when the user shares the Android Keystore encrypted backup archive.
 - `qf-mileage-settings` private preferences for small local settings such as appearance mode.
 - `qf-mileage-ledger.corrupt-<timestamp>.json` when a malformed ledger file is recovered.
 
-Both files are in Android private app storage during the debug MVP.
+Generic Android cloud backup excludes raw ledger, CSV, JSON backup, and encrypted backup files. Real trip archives should move through explicit encrypted app-managed backup flows only.
 
 ## Release Checklist
 

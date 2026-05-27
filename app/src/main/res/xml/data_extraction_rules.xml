@@ -1,10 +1,18 @@
 <data-extraction-rules>
     <cloud-backup>
+        <exclude domain="file" path="qf-mileage-ledger.json" />
+        <exclude domain="file" path="qf-mileage-logbook.csv" />
+        <exclude domain="file" path="qf-mileage-backup.json" />
+        <exclude domain="file" path="qf-mileage-backup.qfmbackup" />
         <exclude domain="file" path="exports/" />
         <exclude domain="file" path="timeline-imports/" />
         <exclude domain="file" path="real-location-data/" />
     </cloud-backup>
     <device-transfer>
+        <exclude domain="file" path="qf-mileage-ledger.json" />
+        <exclude domain="file" path="qf-mileage-logbook.csv" />
+        <exclude domain="file" path="qf-mileage-backup.json" />
+        <exclude domain="file" path="qf-mileage-backup.qfmbackup" />
         <exclude domain="file" path="exports/" />
         <exclude domain="file" path="timeline-imports/" />
         <exclude domain="file" path="real-location-data/" />

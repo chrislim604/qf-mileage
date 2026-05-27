@@ -54,3 +54,11 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 - detail: Defaults new installs to Follow system.
 - detail: Persists the selected appearance mode in private Android preferences.
 - detail: Applies Material light and dark color schemes across the Android app.
+
+## 0.7.0 - 2026-05-27
+
+- minor: add encrypted backup archive support.
+- detail: Adds Android Keystore AES-GCM encrypted `.qfmbackup` archive creation.
+- detail: Adds latest encrypted backup restore from the Export tab.
+- detail: Keeps debug JSON backup sharing but labels encrypted backup as the Drive-ready path.
+- detail: Excludes raw ledger, CSV, JSON backup, and encrypted archive files from generic Android Auto Backup/device transfer.

@@ -177,11 +177,28 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
                                 shareFile(csvFile, "text/csv")
                                 exportMessage = "CSV ready: ${csvFile.name}"
                             }
-                            BackupPanel(exportMessage = exportMessage) {
-                                val backupFile = store.exportBackup(snapshot)
-                                shareFile(backupFile, "application/json")
-                                exportMessage = "Backup ready: ${backupFile.name}"
-                            }
+                            BackupPanel(
+                                exportMessage = exportMessage,
+                                onPlainBackup = {
+                                    val backupFile = store.exportBackup(snapshot)
+                                    shareFile(backupFile, "application/json")
+                                    exportMessage = "Backup ready: ${backupFile.name}"
+                                },
+                                onEncryptedBackup = {
+                                    val backupFile = store.exportEncryptedBackup(snapshot)
+                                    shareFile(backupFile, "application/octet-stream")
+                                    exportMessage = "Encrypted backup ready: ${backupFile.name}"
+                                },
+                                onRestoreLatest = {
+                                    val result = try {
+                                        store.restoreLatestEncryptedBackup()
+                                    } catch (error: Exception) {
+                                        BackupRestoreResult(null, "Encrypted restore failed: ${error.message ?: "unknown error"}")
+                                    }
+                                    result.snapshot?.let { snapshot = it }
+                                    exportMessage = result.message
+                                }
+                            )
                         }
 
                         AppTab.Settings -> {
@@ -484,10 +501,21 @@ private fun ExportPanel(exportMessage: String?, onExport: () -> Unit) {
 }
 
 @Composable
-private fun BackupPanel(exportMessage: String?, onExport: () -> Unit) {
+private fun BackupPanel(
+    exportMessage: String?,
+    onPlainBackup: () -> Unit,
+    onEncryptedBackup: () -> Unit,
+    onRestoreLatest: () -> Unit
+) {
     Section(title = "Backup") {
-        Text("Generate and share a local JSON backup of the current private ledger.")
-        Button(onClick = onExport) {
+        Text("Create a Drive-ready encrypted archive or a plain local JSON backup for debugging.")
+        Button(onClick = onEncryptedBackup) {
+            Text("Share encrypted backup")
+        }
+        Button(onClick = onRestoreLatest) {
+            Text("Restore latest encrypted backup")
+        }
+        Button(onClick = onPlainBackup) {
             Text("Share JSON backup")
         }
         exportMessage?.let {

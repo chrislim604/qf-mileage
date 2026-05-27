@@ -9,7 +9,7 @@ The launcher name is intentionally short: `QF Mileage`. The planned public store
 
 ## Current Status
 
-Version `0.6.0` is the appearance settings MVP. It establishes:
+Version `0.7.0` is the encrypted backup MVP. It establishes:
 
 - Kotlin Multiplatform shared core for mileage rules and future portability.
 - Native Android app shell with free and paid product flavors.
@@ -19,6 +19,7 @@ Version `0.6.0` is the appearance settings MVP. It establishes:
 - File-backed on-device trip ledger storage.
 - Android tab screens for trips, review, vehicles, export/backup, and settings.
 - Appearance settings for Follow system, Light, and Dark themes, with Follow system as the default.
+- Android Keystore encrypted `.qfmbackup` archive creation and latest-backup restore.
 - Manual trip entry by date, start time, end time, start point, and end point.
 - Vehicle creation and deletion, with deleted vehicle references cleared from existing trips instead of deleting trip history.
 - Review actions for classifying pending trips as business or personal with job/client and category labels.
@@ -81,7 +82,7 @@ ANDROID_HOME=/opt/homebrew/share/android-commandlinetools node scripts/run-gradl
 
 ## Local Ledger MVP
 
-The Android app currently persists data to `qf-mileage-ledger.json` in private app storage. CSV exports are written to `qf-mileage-logbook.csv`, JSON backups are written to `qf-mileage-backup.json`, and both can be shared through Android's share sheet. Appearance settings are stored in private Android preferences and default to Follow system. The main app is organized into tabs for trips, review, vehicles, export/backup, and settings. Review can be narrowed to a target date range, and approved trips can carry job/client and category labels for later ERPNext mapping. This keeps the first MVP simple and local-first while preserving the future path to SQLDelight/Room, encrypted Drive backups, and ERPNext sync.
+The Android app currently persists data to `qf-mileage-ledger.json` in private app storage. CSV exports are written to `qf-mileage-logbook.csv`, debug JSON backups are written to `qf-mileage-backup.json`, and encrypted backup archives are written to `qf-mileage-backup.qfmbackup`. Backup and export files can be shared through Android's share sheet. Appearance settings are stored in private Android preferences and default to Follow system. The main app is organized into tabs for trips, review, vehicles, export/backup, and settings. Review can be narrowed to a target date range, and approved trips can carry job/client and category labels for later ERPNext mapping. This keeps the first MVP simple and local-first while preserving the future path to SQLDelight/Room, encrypted Drive `appDataFolder` sync, and ERPNext sync.
 
 ## Versioning
 
