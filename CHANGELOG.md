@@ -68,3 +68,12 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 - patch: align Android theme with QuantumForm brand colors.
 - detail: Replaces default Material purple accents with QuantumForm Accent Gold `#C58A2F`, Primary Black `#111111`, and White `#FFFFFF`.
 - detail: Keeps light, dark, and Follow system appearance modes while applying the brand palette across buttons, tabs, fields, and app surfaces.
+
+## 0.8.0 - 2026-05-27
+
+- minor: add review-first Timeline JSON import.
+- detail: Adds a shared Google Timeline/Takeout-style importer for supported driving activity segments.
+- detail: Adds an Android Import tab with document-picker import for user-selected JSON files.
+- detail: Imports Timeline trips as `GoogleTimelineImport` records with `NeedsReview` purpose so users must classify them before export.
+- detail: De-duplicates repeated imports using deterministic Timeline trip IDs.
+- detail: Adds the product roadmap and documents the review-first import workflow, privacy boundary, and data-model behavior.

@@ -14,7 +14,7 @@ The shared core must not depend on Android, Google Play, AdMob, Google Drive, Bl
 Android adapters planned after the scaffold:
 
 - File-backed local ledger store for the v0.2.0 MVP.
-- Google Maps Timeline import parser.
+- Android document-picker adapter for Google Timeline and Takeout-style JSON imports.
 - Google Routes distance provider.
 - Google Drive `appDataFolder` encrypted backup repository.
 - Android Auto Backup settings integration.
@@ -40,7 +40,13 @@ Future iOS adapters:
 5. User approves purpose, treatment, notes, and claimable distance.
 6. Export CRA-style evidence, create encrypted backup, or sync to ERPNext later.
 
-The v0.7.1 implementation supports a tabbed Android workflow, QuantumForm brand-aligned Follow system/Light/Dark appearance settings, explicit date/time manual entry, local persistence, vehicle deletion, date-range review filtering, job/client and category classification, trip deletion, local CSV export sharing, debug JSON backup sharing, Android Keystore encrypted backup archive sharing, and latest encrypted backup restore. Timeline import, route reconstruction, Drive upload/download, ads, billing, and ERPNext sync remain adapter work after this vertical slice.
+The v0.8.0 implementation supports a tabbed Android workflow, QuantumForm brand-aligned Follow system/Light/Dark appearance settings, explicit date/time manual entry, local persistence, vehicle deletion, date-range review filtering, job/client and category classification, trip deletion, user-selected Timeline JSON import, local CSV export sharing, debug JSON backup sharing, Android Keystore encrypted backup archive sharing, and latest encrypted backup restore. Route reconstruction, Drive upload/download, ads, billing, and ERPNext sync remain adapter work after this vertical slice.
+
+## Review-First Import Workflow
+
+Timeline import is intentionally user-initiated. Android opens a document picker, reads only the selected JSON file, and passes the file text to the shared KMP parser. The shared core extracts supported driving segments and creates deterministic `GoogleTimelineImport` trips with `NeedsReview` purpose. These trips are not claimable until the user reviews them, adds job/category context where needed, and marks them business or personal.
+
+Repeated imports de-duplicate by stable Timeline trip ID. The app stores only normalized trip records in the ledger; raw Timeline files remain outside app storage and must not be copied into the public repo.
 
 ## Privacy Boundary
 

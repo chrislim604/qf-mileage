@@ -3,6 +3,8 @@ package ca.quantumform.mileage
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -43,8 +45,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import ca.quantumform.mileage.core.AppEntitlement
 import ca.quantumform.mileage.core.CsvMileageExporter
+import ca.quantumform.mileage.core.GoogleTimelineImporter
 import ca.quantumform.mileage.core.LedgerSnapshot
 import ca.quantumform.mileage.core.MileageAppStatus
+import ca.quantumform.mileage.core.TimelineImportResult
 import ca.quantumform.mileage.core.TripLedgerService
 import ca.quantumform.mileage.core.TripLeg
 import ca.quantumform.mileage.core.TripPurpose
@@ -65,9 +69,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             QfMileageApp(
                 store = store,
+                importTimelineFile = { uri -> importTimelineFile(uri) },
                 shareFile = { file, mimeType -> shareFile(file, mimeType) }
             )
         }
+    }
+
+    private fun importTimelineFile(uri: Uri): TimelineImportResult {
+        val jsonText = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+            ?: return TimelineImportResult(emptyList(), 0, "Could not read the selected Timeline file.")
+        return GoogleTimelineImporter.parse(jsonText)
     }
 
     private fun shareFile(file: File, mimeType: String) {
@@ -81,9 +92,14 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> Unit) {
+private fun QfMileageApp(
+    store: LocalLedgerStore,
+    importTimelineFile: (Uri) -> TimelineImportResult,
+    shareFile: (File, String) -> Unit
+) {
     var snapshot by remember { mutableStateOf(store.load()) }
     var exportMessage by remember { mutableStateOf<String?>(null) }
+    var importMessage by remember { mutableStateOf<String?>(null) }
     var reviewFromDate by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).toString()) }
     var reviewToDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var selectedTab by remember { mutableStateOf(AppTab.Trips) }
@@ -108,6 +124,21 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
     fun persistThemeMode(next: ThemeMode) {
         themeMode = next
         store.saveThemeMode(next)
+    }
+
+    val timelineImportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            val result = try {
+                importTimelineFile(uri)
+            } catch (error: Exception) {
+                TimelineImportResult(emptyList(), 0, "Timeline import failed: ${error.message ?: "unknown error"}")
+            }
+            val beforeCount = snapshot.trips.size
+            val next = TripLedgerService.importTimelineTrips(snapshot, result.importedTrips)
+            persist(next)
+            val addedCount = next.trips.size - beforeCount
+            importMessage = result.warning ?: "Imported $addedCount new review trips. Skipped ${result.skippedSegments} unsupported segments."
+        }
     }
 
     MaterialTheme(colorScheme = if (useDarkTheme) quantumFormDarkScheme() else quantumFormLightScheme()) {
@@ -164,6 +195,13 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
                             )
                         }
 
+                        AppTab.Import -> {
+                            ImportPanel(
+                                importMessage = importMessage,
+                                onImportTimeline = { timelineImportLauncher.launch(arrayOf("application/json", "text/*")) }
+                            )
+                        }
+
                         AppTab.Vehicles -> {
                             AddVehiclePanel(
                                 snapshot = snapshot,
@@ -215,6 +253,7 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
 private enum class AppTab(val label: String) {
     Trips("Trips"),
     Review("Review"),
+    Import("Import"),
     Vehicles("Vehicles"),
     Export("Export"),
     Settings("Settings")
@@ -508,6 +547,19 @@ private fun ReviewQueue(
                 }
                 Spacer(Modifier.height(6.dp))
             }
+        }
+    }
+}
+
+@Composable
+private fun ImportPanel(importMessage: String?, onImportTimeline: () -> Unit) {
+    Section(title = "Timeline import") {
+        Text("Import a Google Timeline or Takeout JSON file. Imported driving segments land in Review so every trip can be classified before export.")
+        Button(onClick = onImportTimeline) {
+            Text("Import Timeline JSON")
+        }
+        importMessage?.let {
+            Text(it)
         }
     }
 }

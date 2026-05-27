@@ -93,6 +93,70 @@ class TripLedgerServiceTest {
         assertEquals(listOf("2"), filtered.map { it.id })
     }
 
+    @Test
+    fun googleTimelineActivitySegmentsImportAsReviewTrips() {
+        val result = GoogleTimelineImporter.parse(
+            """
+            {
+              "timelineObjects": [
+                {
+                  "activitySegment": {
+                    "activityType": "IN_PASSENGER_VEHICLE",
+                    "startLocation": { "latitudeE7": 491234567, "longitudeE7": -1231234567 },
+                    "endLocation": { "latitudeE7": 492345678, "longitudeE7": -1232345678 },
+                    "duration": {
+                      "startTimestamp": "2026-05-25T16:00:00Z",
+                      "endTimestamp": "2026-05-25T16:30:00Z"
+                    },
+                    "distance": 14250
+                  }
+                },
+                {
+                  "placeVisit": {
+                    "location": { "name": "Lunch" }
+                  }
+                }
+              ]
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(1, result.importedTrips.size)
+        assertEquals(1, result.skippedSegments)
+        assertEquals(TripSource.GoogleTimelineImport, result.importedTrips.single().source)
+        assertEquals(TripPurpose.NeedsReview, result.importedTrips.single().purpose)
+        assertEquals(14.2, result.importedTrips.single().kilometres)
+    }
+
+    @Test
+    fun importedTimelineTripsAreDeduplicatedByStableId() {
+        val imported = GoogleTimelineImporter.parse(
+            """
+            {
+              "timelineObjects": [
+                {
+                  "activitySegment": {
+                    "activityType": "DRIVING",
+                    "startLocation": { "latitude": 49.12345, "longitude": -123.12345 },
+                    "endLocation": { "latitude": 49.22345, "longitude": -123.22345 },
+                    "duration": {
+                      "startTimestamp": "2026-05-25T16:00:00Z",
+                      "endTimestamp": "2026-05-25T16:30:00Z"
+                    },
+                    "distance": 10000
+                  }
+                }
+              ]
+            }
+            """.trimIndent()
+        ).importedTrips
+
+        val firstImport = TripLedgerService.importTimelineTrips(LedgerSnapshot(), imported)
+        val secondImport = TripLedgerService.importTimelineTrips(firstImport, imported)
+
+        assertEquals(1, secondImport.trips.size)
+    }
+
     private fun trip(
         id: String,
         kilometres: Double,

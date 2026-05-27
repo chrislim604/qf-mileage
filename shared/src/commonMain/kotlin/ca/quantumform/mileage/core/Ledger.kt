@@ -75,6 +75,12 @@ object TripLedgerService {
         return snapshot.copy(trips = snapshot.trips.filterNot { it.id == tripId })
     }
 
+    fun importTimelineTrips(snapshot: LedgerSnapshot, trips: List<TripLeg>): LedgerSnapshot {
+        val existingIds = snapshot.trips.map { it.id }.toSet()
+        val newTrips = trips.filterNot { it.id in existingIds }
+        return snapshot.copy(trips = (snapshot.trips + newTrips).sortedByDescending { it.startedAt })
+    }
+
     fun tripsInDateRange(snapshot: LedgerSnapshot, fromDate: String?, toDate: String?): List<TripLeg> {
         return snapshot.trips.filter { trip ->
             val tripDate = trip.startedAt.toString().take(10)
