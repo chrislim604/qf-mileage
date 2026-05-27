@@ -29,7 +29,8 @@ data class PlaceTag(
     val id: String,
     val label: String,
     val kind: PlaceKind,
-    val approved: Boolean
+    val approved: Boolean,
+    val matchLabel: String? = null
 )
 
 @Serializable

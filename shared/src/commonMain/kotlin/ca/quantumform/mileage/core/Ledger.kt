@@ -8,6 +8,11 @@ data class ReviewQueueSummary(
     val mixedKilometres: Double
 )
 
+data class PlaceSuggestion(
+    val matchLabel: String,
+    val tripCount: Int
+)
+
 object TripLedgerService {
     fun summary(snapshot: LedgerSnapshot): ReviewQueueSummary {
         return ReviewQueueSummary(
@@ -33,6 +38,15 @@ object TripLedgerService {
     fun upsertVehicle(snapshot: LedgerSnapshot, vehicle: Vehicle): LedgerSnapshot {
         val vehicles = snapshot.vehicles.filterNot { it.id == vehicle.id } + vehicle
         return snapshot.copy(vehicles = vehicles.sortedBy { it.displayName.lowercase() })
+    }
+
+    fun upsertPlace(snapshot: LedgerSnapshot, place: PlaceTag): LedgerSnapshot {
+        val places = snapshot.places.filterNot { it.id == place.id } + place
+        return snapshot.copy(places = places.sortedWith(compareBy<PlaceTag> { it.kind.name }.thenBy { it.label.lowercase() }))
+    }
+
+    fun deletePlace(snapshot: LedgerSnapshot, placeId: String): LedgerSnapshot {
+        return snapshot.copy(places = snapshot.places.filterNot { it.id == placeId })
     }
 
     fun deleteVehicle(snapshot: LedgerSnapshot, vehicleId: String): LedgerSnapshot {
@@ -81,6 +95,41 @@ object TripLedgerService {
         return snapshot.copy(trips = (snapshot.trips + newTrips).sortedByDescending { it.startedAt })
     }
 
+    fun suggestFrequentPlaces(snapshot: LedgerSnapshot, minimumVisits: Int = 2): List<PlaceSuggestion> {
+        val existingMatches = snapshot.places.map { (it.matchLabel ?: it.label).normalizePlaceLabel() }.toSet()
+        return snapshot.trips
+            .flatMap { listOf(it.originLabel, it.destinationLabel) }
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .groupingBy { it }
+            .eachCount()
+            .filter { (label, count) -> count >= minimumVisits && label.normalizePlaceLabel() !in existingMatches }
+            .map { (label, count) -> PlaceSuggestion(matchLabel = label, tripCount = count) }
+            .sortedWith(compareByDescending<PlaceSuggestion> { it.tripCount }.thenBy { it.matchLabel.lowercase() })
+    }
+
+    fun applyApprovedPlaceTags(snapshot: LedgerSnapshot): LedgerSnapshot {
+        val approvedPlaces = snapshot.places.filter { it.approved }
+        if (approvedPlaces.isEmpty()) return snapshot
+
+        val trips = snapshot.trips.map { trip ->
+            val origin = approvedPlaces.firstOrNull { it.matches(trip.originLabel) }?.displayLabel() ?: trip.originLabel
+            val destination = approvedPlaces.firstOrNull { it.matches(trip.destinationLabel) }?.displayLabel() ?: trip.destinationLabel
+            if (origin == trip.originLabel && destination == trip.destinationLabel) {
+                trip
+            } else {
+                trip.copy(
+                    originLabel = origin,
+                    destinationLabel = destination,
+                    adjustmentNote = listOfNotNull(trip.adjustmentNote, "Applied approved place tags.")
+                        .distinct()
+                        .joinToString(" ")
+                )
+            }
+        }
+        return snapshot.copy(trips = trips)
+    }
+
     fun tripsInDateRange(snapshot: LedgerSnapshot, fromDate: String?, toDate: String?): List<TripLeg> {
         return snapshot.trips.filter { trip ->
             val tripDate = trip.startedAt.toString().take(10)
@@ -89,4 +138,12 @@ object TripLedgerService {
             afterStart && beforeEnd
         }
     }
+
+    private fun PlaceTag.matches(tripLabel: String): Boolean {
+        return tripLabel.normalizePlaceLabel() == (matchLabel ?: label).normalizePlaceLabel()
+    }
+
+    private fun PlaceTag.displayLabel(): String = "${kind.name}: $label"
+
+    private fun String.normalizePlaceLabel(): String = trim().lowercase()
 }

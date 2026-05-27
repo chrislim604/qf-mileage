@@ -85,3 +85,12 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 - detail: Adds a one-tap action to open Google Timeline/Location History controls.
 - detail: Adds a fallback action to open Android Location settings when device Location is off.
 - detail: Documents that Google account-level Timeline status cannot be read or enabled directly through a public third-party Android API.
+
+## 0.9.0 - 2026-05-27
+
+- minor: add approved saved places and frequent endpoint suggestions.
+- detail: Adds a Places tab for approved place labels and raw trip-label match text.
+- detail: Persists `PlaceTag` records in the local ledger JSON and encrypted/plain backups.
+- detail: Suggests repeated trip endpoints as candidate places while requiring user approval before saving them.
+- detail: Adds explicit approved-place application that updates matching origin/destination labels without changing trip purpose, job/client, category, or claimability.
+- detail: Adds shared tests for frequent place suggestions and approval-based place tag application.

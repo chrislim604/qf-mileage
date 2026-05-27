@@ -52,6 +52,8 @@ import ca.quantumform.mileage.core.CsvMileageExporter
 import ca.quantumform.mileage.core.GoogleTimelineImporter
 import ca.quantumform.mileage.core.LedgerSnapshot
 import ca.quantumform.mileage.core.MileageAppStatus
+import ca.quantumform.mileage.core.PlaceKind
+import ca.quantumform.mileage.core.PlaceTag
 import ca.quantumform.mileage.core.TimelineImportResult
 import ca.quantumform.mileage.core.TripLedgerService
 import ca.quantumform.mileage.core.TripLeg
@@ -234,6 +236,15 @@ private fun QfMileageApp(
                             )
                         }
 
+                        AppTab.Places -> {
+                            PlacesPanel(
+                                snapshot = snapshot,
+                                onSave = { persist(TripLedgerService.upsertPlace(snapshot, it)) },
+                                onDelete = { persist(TripLedgerService.deletePlace(snapshot, it)) },
+                                onApplyTags = { persist(TripLedgerService.applyApprovedPlaceTags(snapshot)) }
+                            )
+                        }
+
                         AppTab.Vehicles -> {
                             AddVehiclePanel(
                                 snapshot = snapshot,
@@ -286,6 +297,7 @@ private enum class AppTab(val label: String) {
     Trips("Trips"),
     Review("Review"),
     Import("Import"),
+    Places("Places"),
     Vehicles("Vehicles"),
     Export("Export"),
     Settings("Settings")
@@ -612,6 +624,107 @@ private fun ImportPanel(
         }
         importMessage?.let {
             Text(it)
+        }
+    }
+}
+
+@Composable
+private fun PlacesPanel(
+    snapshot: LedgerSnapshot,
+    onSave: (PlaceTag) -> Unit,
+    onDelete: (String) -> Unit,
+    onApplyTags: () -> Unit
+) {
+    var label by remember { mutableStateOf("") }
+    var matchLabel by remember { mutableStateOf("") }
+    var kind by remember { mutableStateOf(PlaceKind.Client) }
+    val suggestions = TripLedgerService.suggestFrequentPlaces(snapshot)
+
+    Section(title = "Saved places") {
+        if (snapshot.places.isEmpty()) {
+            Text("No saved places yet.")
+        } else {
+            snapshot.places.forEach { place ->
+                Text("${place.kind.name}: ${place.label}")
+                Text("Matches: ${(place.matchLabel ?: place.label)} - ${if (place.approved) "Approved" else "Pending"}")
+                Button(onClick = { onDelete(place.id) }) {
+                    Text("Delete place")
+                }
+                Spacer(Modifier.height(6.dp))
+            }
+        }
+
+        OutlinedTextField(label, { label = it }, label = { Text("Display label") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = matchLabel,
+            onValueChange = { matchLabel = it },
+            label = { Text("Match trip label") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        PlaceKindButtons(kind = kind, onChange = { kind = it })
+        Button(
+            enabled = label.isNotBlank(),
+            onClick = {
+                onSave(
+                    PlaceTag(
+                        id = "place-${Clock.System.now().toEpochMilliseconds()}",
+                        label = label.trim(),
+                        kind = kind,
+                        approved = true,
+                        matchLabel = matchLabel.trim().ifBlank { label.trim() }
+                    )
+                )
+                label = ""
+                matchLabel = ""
+                kind = PlaceKind.Client
+            }
+        ) {
+            Text("Add approved place")
+        }
+        Button(onClick = onApplyTags, enabled = snapshot.places.any { it.approved }) {
+            Text("Apply approved places")
+        }
+    }
+
+    Section(title = "Frequent place suggestions") {
+        if (suggestions.isEmpty()) {
+            Text("No repeated trip endpoints to suggest yet.")
+        } else {
+            suggestions.forEach { suggestion ->
+                Text("${suggestion.matchLabel} - ${suggestion.tripCount} visits")
+                Button(
+                    onClick = {
+                        onSave(
+                            PlaceTag(
+                                id = "place-${Clock.System.now().toEpochMilliseconds()}",
+                                label = suggestion.matchLabel,
+                                kind = PlaceKind.Custom,
+                                approved = true,
+                                matchLabel = suggestion.matchLabel
+                            )
+                        )
+                    }
+                ) {
+                    Text("Approve suggestion")
+                }
+                Spacer(Modifier.height(6.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlaceKindButtons(kind: PlaceKind, onChange: (PlaceKind) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("Place kind")
+        PlaceKind.entries.chunked(2).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                row.forEach { option ->
+                    Button(onClick = { onChange(option) }) {
+                        Text(if (kind == option) "* ${option.name}" else option.name)
+                    }
+                }
+            }
         }
     }
 }

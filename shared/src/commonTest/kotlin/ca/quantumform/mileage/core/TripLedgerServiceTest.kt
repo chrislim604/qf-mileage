@@ -157,6 +157,59 @@ class TripLedgerServiceTest {
         assertEquals(1, secondImport.trips.size)
     }
 
+    @Test
+    fun frequentPlaceSuggestionsSkipAlreadyApprovedPlaces() {
+        val snapshot = LedgerSnapshot(
+            places = listOf(
+                PlaceTag(
+                    id = "place-1",
+                    label = "Office",
+                    kind = PlaceKind.Office,
+                    approved = true,
+                    matchLabel = "Office"
+                )
+            ),
+            trips = listOf(
+                trip("1", 8.0, TripPurpose.NeedsReview, destination = "Client site"),
+                trip("2", 8.0, TripPurpose.NeedsReview, destination = "Client site"),
+                trip("3", 8.0, TripPurpose.NeedsReview, destination = "Office")
+            )
+        )
+
+        val suggestions = TripLedgerService.suggestFrequentPlaces(snapshot)
+
+        assertEquals(listOf("Client site"), suggestions.map { it.matchLabel })
+    }
+
+    @Test
+    fun approvedPlaceTagsUpdateLabelsWithoutClassifyingTrips() {
+        val snapshot = LedgerSnapshot(
+            places = listOf(
+                PlaceTag(
+                    id = "place-1",
+                    label = "Client A",
+                    kind = PlaceKind.Client,
+                    approved = true,
+                    matchLabel = "49.12345, -123.12345"
+                )
+            ),
+            trips = listOf(
+                trip(
+                    id = "1",
+                    kilometres = 8.0,
+                    purpose = TripPurpose.NeedsReview,
+                    destination = "49.12345, -123.12345"
+                )
+            )
+        )
+
+        val updated = TripLedgerService.applyApprovedPlaceTags(snapshot)
+
+        assertEquals("Client: Client A", updated.trips.single().destinationLabel)
+        assertEquals(TripPurpose.NeedsReview, updated.trips.single().purpose)
+        assertTrue(updated.trips.single().adjustmentNote?.contains("Applied approved place tags.") == true)
+    }
+
     private fun trip(
         id: String,
         kilometres: Double,

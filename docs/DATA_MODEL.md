@@ -5,7 +5,7 @@ The data model keeps the internal trip ledger canonical so exports and ERPNext i
 ## Core Records
 
 - Vehicle: display name, optional odometer metadata, and approved Bluetooth device mappings.
-- PlaceTag: user-approved frequent place labels such as Home, Office, Warehouse, Client, Supplier, Personal, or Custom.
+- PlaceTag: user-approved frequent place labels such as Home, Office, Warehouse, Client, Supplier, Personal, or Custom, with an optional raw trip-label match value.
 - TripLeg: start/end times, origin/destination labels, kilometres, vehicle, optional job/client label, optional category label, purpose, source, evidence note, and optional adjustment note.
 - RouteDistanceResult: driven-distance calculation, provider, confidence, and evidence summary.
 - BackupManifest: schema version, creation time, encryption flag, and record counts for JSON and encrypted backup archives.
@@ -39,6 +39,8 @@ The Android v0.7.0 MVP stores `LedgerSnapshot` data in a private JSON file. This
 Manual trip records can be entered with explicit local date, start time, end time, start point, end point, vehicle, job/client, category, kilometres, and evidence note. Date-range review filters use the trip start date so a user can focus review on a billing period, payroll period, or catch-up window without changing the canonical ledger.
 
 Timeline imports create deterministic `TripLeg` IDs from start/end time and endpoint coordinates. This lets users safely import the same Timeline file more than once without creating duplicate review trips. Imported trips always use `TripSource.GoogleTimelineImport`, start as `TripPurpose.NeedsReview`, and carry an evidence note describing the imported segment type.
+
+Saved places use `PlaceTag.label` for the user-facing name and `PlaceTag.matchLabel` for the raw trip endpoint to match when they differ. Applying approved places updates origin/destination labels such as `Client: Client A`, but it does not classify a trip as business or personal. Purpose remains a separate review decision.
 
 Deleting a vehicle removes the vehicle record and clears matching `TripLeg.vehicleId` references. It does not delete trips, because trip history is evidence and should survive settings cleanup.
 

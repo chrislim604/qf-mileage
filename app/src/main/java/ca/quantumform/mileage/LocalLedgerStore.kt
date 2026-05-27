@@ -6,6 +6,8 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import ca.quantumform.mileage.core.BackupManifest
 import ca.quantumform.mileage.core.LedgerSnapshot
+import ca.quantumform.mileage.core.PlaceKind
+import ca.quantumform.mileage.core.PlaceTag
 import ca.quantumform.mileage.core.TripLeg
 import ca.quantumform.mileage.core.TripPurpose
 import ca.quantumform.mileage.core.TripSource
@@ -162,6 +164,20 @@ class LocalLedgerStore(context: Context) {
         }
     }
 
+    private fun JSONArray?.toPlaces(): List<PlaceTag> {
+        if (this == null) return emptyList()
+        return List(length()) { index ->
+            val item = getJSONObject(index)
+            PlaceTag(
+                id = item.getString("id"),
+                label = item.getString("label"),
+                kind = PlaceKind.valueOf(item.getString("kind")),
+                approved = item.optBoolean("approved", false),
+                matchLabel = item.optString("matchLabel").ifBlank { null }
+            )
+        }
+    }
+
     private fun JSONArray?.toStringSet(): Set<String> {
         if (this == null) return emptySet()
         return List(length()) { getString(it) }.toSet()
@@ -203,17 +219,35 @@ class LocalLedgerStore(context: Context) {
         return array
     }
 
+    private fun List<PlaceTag>.toJsonPlaces(): JSONArray {
+        val array = JSONArray()
+        forEach { place ->
+            array.put(
+                JSONObject()
+                    .put("id", place.id)
+                    .put("label", place.label)
+                    .put("kind", place.kind.name)
+                    .put("approved", place.approved)
+                    .put("matchLabel", place.matchLabel.orEmpty())
+            )
+        }
+        return array
+    }
+
     private fun LedgerSnapshot.toJson(): JSONObject {
         return JSONObject()
             .put("vehicles", vehicles.toJsonVehicles())
+            .put("places", places.toJsonPlaces())
             .put("trips", trips.toJsonTrips())
     }
 
     private fun JSONObject.toLedgerSnapshot(): LedgerSnapshot {
         val vehicles = optJSONArray("vehicles").toVehicles()
+        val places = optJSONArray("places").toPlaces()
         val trips = optJSONArray("trips").toTrips()
         return LedgerSnapshot(
             vehicles = vehicles.ifEmpty { listOf(defaultVehicle()) },
+            places = places,
             trips = trips
         )
     }

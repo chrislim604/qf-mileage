@@ -25,6 +25,7 @@ The app should not treat automation as authority. Imports, route calculations, s
 - Suggest frequent places from reviewed trips.
 - Add user-visible auto-tagging rules for recurring destinations, jobs, and categories.
 - Keep every suggested place or rule approval-based before it affects exports.
+- Initial implementation covers saved places, frequent endpoint suggestions, and explicit label tagging. Recurring job/category rules remain future work.
 
 ### 0.10.0 - ERPNext Export Batches
 
