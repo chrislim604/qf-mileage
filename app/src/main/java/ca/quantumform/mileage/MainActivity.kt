@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -21,10 +22,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -83,6 +86,13 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
     var reviewFromDate by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).toString()) }
     var reviewToDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var selectedTab by remember { mutableStateOf(AppTab.Trips) }
+    var themeMode by remember { mutableStateOf(store.loadThemeMode()) }
+    val systemDark = isSystemInDarkTheme()
+    val useDarkTheme = when (themeMode) {
+        ThemeMode.FollowSystem -> systemDark
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+    }
     val status = MileageAppStatus(
         displayName = "QF Mileage",
         version = BuildConfig.VERSION_NAME,
@@ -94,7 +104,12 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
         store.save(next)
     }
 
-    MaterialTheme {
+    fun persistThemeMode(next: ThemeMode) {
+        themeMode = next
+        store.saveThemeMode(next)
+    }
+
+    MaterialTheme(colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()) {
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -168,6 +183,10 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
                                 exportMessage = "Backup ready: ${backupFile.name}"
                             }
                         }
+
+                        AppTab.Settings -> {
+                            SettingsPanel(themeMode = themeMode, onThemeModeChange = { persistThemeMode(it) })
+                        }
                     }
                 }
             }
@@ -179,13 +198,14 @@ private enum class AppTab(val label: String) {
     Trips("Trips"),
     Review("Review"),
     Vehicles("Vehicles"),
-    Export("Export")
+    Export("Export"),
+    Settings("Settings")
 }
 
 @Composable
 private fun AppTabs(selectedTab: AppTab, onSelect: (AppTab) -> Unit) {
     val tabs = AppTab.entries
-    PrimaryTabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
+    PrimaryScrollableTabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
         tabs.forEach { tab ->
             Tab(
                 selected = selectedTab == tab,
@@ -472,6 +492,18 @@ private fun BackupPanel(exportMessage: String?, onExport: () -> Unit) {
         }
         exportMessage?.let {
             Text(it)
+        }
+    }
+}
+
+@Composable
+private fun SettingsPanel(themeMode: ThemeMode, onThemeModeChange: (ThemeMode) -> Unit) {
+    Section(title = "Appearance") {
+        Text("Theme")
+        ThemeMode.entries.forEach { option ->
+            Button(onClick = { onThemeModeChange(option) }, modifier = Modifier.fillMaxWidth()) {
+                Text(if (themeMode == option) "* ${option.label}" else option.label)
+            }
         }
     }
 }

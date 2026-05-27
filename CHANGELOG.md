@@ -46,3 +46,11 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 - detail: Adds vehicle deletion in the Vehicles tab.
 - detail: Preserves trip history when a vehicle is deleted by clearing matching trip vehicle references instead of deleting trips.
 - detail: Updates shared tests and documentation for the tabbed v0.5.0 workflow.
+
+## 0.6.0 - 2026-05-27
+
+- minor: add appearance settings and dark mode.
+- detail: Adds a Settings tab with Follow system, Light, and Dark theme options.
+- detail: Defaults new installs to Follow system.
+- detail: Persists the selected appearance mode in private Android preferences.
+- detail: Applies Material light and dark color schemes across the Android app.

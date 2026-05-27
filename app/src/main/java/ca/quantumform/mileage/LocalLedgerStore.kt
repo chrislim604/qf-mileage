@@ -13,6 +13,7 @@ import org.json.JSONObject
 
 class LocalLedgerStore(context: Context) {
     private val file = File(context.filesDir, "qf-mileage-ledger.json")
+    private val preferences = context.getSharedPreferences("qf-mileage-settings", Context.MODE_PRIVATE)
 
     fun load(): LedgerSnapshot {
         if (!file.exists()) {
@@ -36,6 +37,15 @@ class LocalLedgerStore(context: Context) {
 
     fun save(snapshot: LedgerSnapshot) {
         file.writeText(snapshot.toJson().toString(2))
+    }
+
+    fun loadThemeMode(): ThemeMode {
+        return ThemeMode.entries.firstOrNull { it.name == preferences.getString("themeMode", ThemeMode.FollowSystem.name) }
+            ?: ThemeMode.FollowSystem
+    }
+
+    fun saveThemeMode(themeMode: ThemeMode) {
+        preferences.edit().putString("themeMode", themeMode.name).apply()
     }
 
     fun exportCsv(csv: String): File {
@@ -140,4 +150,10 @@ class LocalLedgerStore(context: Context) {
             .put("vehicles", vehicles.toJsonVehicles())
             .put("trips", trips.toJsonTrips())
     }
+}
+
+enum class ThemeMode(val label: String) {
+    FollowSystem("Follow system"),
+    Light("Light"),
+    Dark("Dark")
 }
