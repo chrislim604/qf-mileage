@@ -77,3 +77,11 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 - detail: Imports Timeline trips as `GoogleTimelineImport` records with `NeedsReview` purpose so users must classify them before export.
 - detail: De-duplicates repeated imports using deterministic Timeline trip IDs.
 - detail: Adds the product roadmap and documents the review-first import workflow, privacy boundary, and data-model behavior.
+
+## 0.8.1 - 2026-05-27
+
+- patch: add Timeline readiness shortcuts.
+- detail: Adds Import tab status for Android device Location state.
+- detail: Adds a one-tap action to open Google Timeline/Location History controls.
+- detail: Adds a fallback action to open Android Location settings when device Location is off.
+- detail: Documents that Google account-level Timeline status cannot be read or enabled directly through a public third-party Android API.

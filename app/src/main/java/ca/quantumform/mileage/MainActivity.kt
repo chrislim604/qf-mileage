@@ -1,8 +1,11 @@
 package ca.quantumform.mileage
 
 import android.content.Intent
+import android.content.Context
+import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.ComponentActivity
@@ -43,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
+import androidx.core.location.LocationManagerCompat
 import ca.quantumform.mileage.core.AppEntitlement
 import ca.quantumform.mileage.core.CsvMileageExporter
 import ca.quantumform.mileage.core.GoogleTimelineImporter
@@ -70,6 +74,9 @@ class MainActivity : ComponentActivity() {
             QfMileageApp(
                 store = store,
                 importTimelineFile = { uri -> importTimelineFile(uri) },
+                isDeviceLocationEnabled = { isDeviceLocationEnabled() },
+                openDeviceLocationSettings = { openDeviceLocationSettings() },
+                openTimelineSettings = { openTimelineSettings() },
                 shareFile = { file, mimeType -> shareFile(file, mimeType) }
             )
         }
@@ -79,6 +86,20 @@ class MainActivity : ComponentActivity() {
         val jsonText = contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
             ?: return TimelineImportResult(emptyList(), 0, "Could not read the selected Timeline file.")
         return GoogleTimelineImporter.parse(jsonText)
+    }
+
+    private fun isDeviceLocationEnabled(): Boolean {
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return LocationManagerCompat.isLocationEnabled(locationManager)
+    }
+
+    private fun openDeviceLocationSettings() {
+        startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+    }
+
+    private fun openTimelineSettings() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://myactivity.google.com/activitycontrols/location"))
+        startActivity(intent)
     }
 
     private fun shareFile(file: File, mimeType: String) {
@@ -95,11 +116,15 @@ class MainActivity : ComponentActivity() {
 private fun QfMileageApp(
     store: LocalLedgerStore,
     importTimelineFile: (Uri) -> TimelineImportResult,
+    isDeviceLocationEnabled: () -> Boolean,
+    openDeviceLocationSettings: () -> Unit,
+    openTimelineSettings: () -> Unit,
     shareFile: (File, String) -> Unit
 ) {
     var snapshot by remember { mutableStateOf(store.load()) }
     var exportMessage by remember { mutableStateOf<String?>(null) }
     var importMessage by remember { mutableStateOf<String?>(null) }
+    var deviceLocationEnabled by remember { mutableStateOf(isDeviceLocationEnabled()) }
     var reviewFromDate by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).toString()) }
     var reviewToDate by remember { mutableStateOf(LocalDate.now().toString()) }
     var selectedTab by remember { mutableStateOf(AppTab.Trips) }
@@ -198,6 +223,13 @@ private fun QfMileageApp(
                         AppTab.Import -> {
                             ImportPanel(
                                 importMessage = importMessage,
+                                deviceLocationEnabled = deviceLocationEnabled,
+                                onRefreshTimelineStatus = {
+                                    deviceLocationEnabled = isDeviceLocationEnabled()
+                                    importMessage = "Device Location is ${if (deviceLocationEnabled) "on" else "off"}. Open Timeline settings to confirm Google Timeline is enabled for this account and device."
+                                },
+                                onOpenTimelineSettings = openTimelineSettings,
+                                onOpenDeviceLocationSettings = openDeviceLocationSettings,
                                 onImportTimeline = { timelineImportLauncher.launch(arrayOf("application/json", "text/*")) }
                             )
                         }
@@ -552,8 +584,28 @@ private fun ReviewQueue(
 }
 
 @Composable
-private fun ImportPanel(importMessage: String?, onImportTimeline: () -> Unit) {
+private fun ImportPanel(
+    importMessage: String?,
+    deviceLocationEnabled: Boolean,
+    onRefreshTimelineStatus: () -> Unit,
+    onOpenTimelineSettings: () -> Unit,
+    onOpenDeviceLocationSettings: () -> Unit,
+    onImportTimeline: () -> Unit
+) {
     Section(title = "Timeline import") {
+        Text("Device Location: ${if (deviceLocationEnabled) "On" else "Off"}")
+        Text("Google Timeline status must be confirmed in Google settings; Android does not expose a public app API to read or enable it directly.")
+        Button(onClick = onOpenTimelineSettings) {
+            Text("Open Timeline settings")
+        }
+        if (!deviceLocationEnabled) {
+            Button(onClick = onOpenDeviceLocationSettings) {
+                Text("Open Android Location settings")
+            }
+        }
+        Button(onClick = onRefreshTimelineStatus) {
+            Text("Refresh status")
+        }
         Text("Import a Google Timeline or Takeout JSON file. Imported driving segments land in Review so every trip can be classified before export.")
         Button(onClick = onImportTimeline) {
             Text("Import Timeline JSON")
