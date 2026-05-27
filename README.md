@@ -9,7 +9,7 @@ The launcher name is intentionally short: `QF Mileage`. The planned public store
 
 ## Current Status
 
-Version `0.7.0` is the encrypted backup MVP. It establishes:
+Version `0.7.1` is the brand-aligned encrypted backup MVP. It establishes:
 
 - Kotlin Multiplatform shared core for mileage rules and future portability.
 - Native Android app shell with free and paid product flavors.
@@ -19,6 +19,7 @@ Version `0.7.0` is the encrypted backup MVP. It establishes:
 - File-backed on-device trip ledger storage.
 - Android tab screens for trips, review, vehicles, export/backup, and settings.
 - Appearance settings for Follow system, Light, and Dark themes, with Follow system as the default.
+- QuantumForm brand colors: Accent Gold `#C58A2F`, Primary Black `#111111`, and White `#FFFFFF`.
 - Android Keystore encrypted `.qfmbackup` archive creation and latest-backup restore.
 - Manual trip entry by date, start time, end time, start point, and end point.
 - Vehicle creation and deletion, with deleted vehicle references cleared from existing trips instead of deleting trip history.

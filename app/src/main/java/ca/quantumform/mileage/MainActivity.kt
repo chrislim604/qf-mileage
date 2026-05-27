@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
@@ -109,7 +110,7 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
         store.saveThemeMode(next)
     }
 
-    MaterialTheme(colorScheme = if (useDarkTheme) darkColorScheme() else lightColorScheme()) {
+    MaterialTheme(colorScheme = if (useDarkTheme) quantumFormDarkScheme() else quantumFormLightScheme()) {
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -218,6 +219,52 @@ private enum class AppTab(val label: String) {
     Export("Export"),
     Settings("Settings")
 }
+
+private val QuantumFormGold = Color(0xFFC58A2F)
+private val QuantumFormBlack = Color(0xFF111111)
+private val QuantumFormWhite = Color(0xFFFFFFFF)
+private val QuantumFormPaper = Color(0xFFF4F7F6)
+private val QuantumFormLine = Color(0xFFD9E2E4)
+private val QuantumFormMuted = Color(0xFF5F6D73)
+private val QuantumFormDarkSurface = Color(0xFF202C31)
+
+private fun quantumFormLightScheme() = lightColorScheme(
+    primary = QuantumFormGold,
+    onPrimary = QuantumFormBlack,
+    primaryContainer = Color(0xFFF2E4CF),
+    onPrimaryContainer = QuantumFormBlack,
+    secondary = QuantumFormBlack,
+    onSecondary = QuantumFormWhite,
+    secondaryContainer = QuantumFormLine,
+    onSecondaryContainer = QuantumFormBlack,
+    background = QuantumFormPaper,
+    onBackground = QuantumFormBlack,
+    surface = QuantumFormWhite,
+    onSurface = QuantumFormBlack,
+    surfaceVariant = QuantumFormLine,
+    onSurfaceVariant = QuantumFormMuted,
+    outline = QuantumFormMuted,
+    outlineVariant = QuantumFormLine
+)
+
+private fun quantumFormDarkScheme() = darkColorScheme(
+    primary = QuantumFormGold,
+    onPrimary = QuantumFormBlack,
+    primaryContainer = QuantumFormGold,
+    onPrimaryContainer = QuantumFormBlack,
+    secondary = QuantumFormWhite,
+    onSecondary = QuantumFormBlack,
+    secondaryContainer = QuantumFormDarkSurface,
+    onSecondaryContainer = QuantumFormWhite,
+    background = QuantumFormBlack,
+    onBackground = QuantumFormWhite,
+    surface = QuantumFormBlack,
+    onSurface = QuantumFormWhite,
+    surfaceVariant = QuantumFormDarkSurface,
+    onSurfaceVariant = Color(0xFFE8EFF0),
+    outline = Color(0xFF8FA0A6),
+    outlineVariant = QuantumFormDarkSurface
+)
 
 @Composable
 private fun AppTabs(selectedTab: AppTab, onSelect: (AppTab) -> Unit) {

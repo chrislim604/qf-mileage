@@ -40,7 +40,7 @@ Future iOS adapters:
 5. User approves purpose, treatment, notes, and claimable distance.
 6. Export CRA-style evidence, create encrypted backup, or sync to ERPNext later.
 
-The v0.7.0 implementation supports a tabbed Android workflow, Follow system/Light/Dark appearance settings, explicit date/time manual entry, local persistence, vehicle deletion, date-range review filtering, job/client and category classification, trip deletion, local CSV export sharing, debug JSON backup sharing, Android Keystore encrypted backup archive sharing, and latest encrypted backup restore. Timeline import, route reconstruction, Drive upload/download, ads, billing, and ERPNext sync remain adapter work after this vertical slice.
+The v0.7.1 implementation supports a tabbed Android workflow, QuantumForm brand-aligned Follow system/Light/Dark appearance settings, explicit date/time manual entry, local persistence, vehicle deletion, date-range review filtering, job/client and category classification, trip deletion, local CSV export sharing, debug JSON backup sharing, Android Keystore encrypted backup archive sharing, and latest encrypted backup restore. Timeline import, route reconstruction, Drive upload/download, ads, billing, and ERPNext sync remain adapter work after this vertical slice.
 
 ## Privacy Boundary
 

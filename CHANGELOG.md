@@ -62,3 +62,9 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 - detail: Adds latest encrypted backup restore from the Export tab.
 - detail: Keeps debug JSON backup sharing but labels encrypted backup as the Drive-ready path.
 - detail: Excludes raw ledger, CSV, JSON backup, and encrypted archive files from generic Android Auto Backup/device transfer.
+
+## 0.7.1 - 2026-05-27
+
+- patch: align Android theme with QuantumForm brand colors.
+- detail: Replaces default Material purple accents with QuantumForm Accent Gold `#C58A2F`, Primary Black `#111111`, and White `#FFFFFF`.
+- detail: Keeps light, dark, and Follow system appearance modes while applying the brand palette across buttons, tabs, fields, and app surfaces.
