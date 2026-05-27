@@ -38,3 +38,11 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 
 - patch: fix Android system bar overlap.
 - detail: Applies safe drawing insets to the main Compose scroll layout so content no longer bleeds into the top status bar or bottom system gesture area.
+
+## 0.5.0 - 2026-05-27
+
+- minor: add tabbed Android UX and vehicle deletion.
+- detail: Replaces the single long Android page with tabs for Trips, Review, Vehicles, and Export.
+- detail: Adds vehicle deletion in the Vehicles tab.
+- detail: Preserves trip history when a vehicle is deleted by clearing matching trip vehicle references instead of deleting trips.
+- detail: Updates shared tests and documentation for the tabbed v0.5.0 workflow.

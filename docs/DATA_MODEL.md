@@ -37,4 +37,6 @@ The Android v0.4.0 MVP stores `LedgerSnapshot` data in a private JSON file. This
 
 Manual trip records can be entered with explicit local date, start time, end time, start point, end point, vehicle, job/client, category, kilometres, and evidence note. Date-range review filters use the trip start date so a user can focus review on a billing period, payroll period, or catch-up window without changing the canonical ledger.
 
+Deleting a vehicle removes the vehicle record and clears matching `TripLeg.vehicleId` references. It does not delete trips, because trip history is evidence and should survive settings cleanup.
+
 If the local JSON file cannot be parsed, the app preserves it as a timestamped `.corrupt-...json` file and starts with a clean default ledger instead of crashing on launch.

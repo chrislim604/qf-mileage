@@ -35,6 +35,19 @@ object TripLedgerService {
         return snapshot.copy(vehicles = vehicles.sortedBy { it.displayName.lowercase() })
     }
 
+    fun deleteVehicle(snapshot: LedgerSnapshot, vehicleId: String): LedgerSnapshot {
+        val vehicles = snapshot.vehicles.filterNot { it.id == vehicleId }
+        val trips = snapshot.trips.map { trip ->
+            if (trip.vehicleId == vehicleId) {
+                // Preserve trip evidence even when a vehicle label is removed from settings.
+                trip.copy(vehicleId = null)
+            } else {
+                trip
+            }
+        }
+        return snapshot.copy(vehicles = vehicles, trips = trips)
+    }
+
     fun updateTripPurpose(
         snapshot: LedgerSnapshot,
         tripId: String,

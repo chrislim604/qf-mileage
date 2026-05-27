@@ -65,6 +65,20 @@ class TripLedgerServiceTest {
     }
 
     @Test
+    fun deletingVehiclePreservesTripsAndClearsVehicleReference() {
+        val snapshot = LedgerSnapshot(
+            vehicles = listOf(Vehicle("vehicle-1", "Work vehicle")),
+            trips = listOf(trip("1", 8.0, TripPurpose.Business))
+        )
+
+        val updated = TripLedgerService.deleteVehicle(snapshot, "vehicle-1")
+
+        assertEquals(emptyList(), updated.vehicles)
+        assertEquals(1, updated.trips.size)
+        assertEquals(null, updated.trips.single().vehicleId)
+    }
+
+    @Test
     fun tripsCanBeFilteredByDateRangeForReview() {
         val snapshot = LedgerSnapshot(
             trips = listOf(

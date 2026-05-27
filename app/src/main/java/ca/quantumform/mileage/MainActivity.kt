@@ -24,7 +24,9 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -80,6 +82,7 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
     var exportMessage by remember { mutableStateOf<String?>(null) }
     var reviewFromDate by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).toString()) }
     var reviewToDate by remember { mutableStateOf(LocalDate.now().toString()) }
+    var selectedTab by remember { mutableStateOf(AppTab.Trips) }
     val status = MileageAppStatus(
         displayName = "QF Mileage",
         version = BuildConfig.VERSION_NAME,
@@ -95,54 +98,100 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
-                    .verticalScroll(rememberScrollState())
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(18.dp)
             ) {
                 Header(status)
-                SummaryPanel(snapshot)
-                AddVehiclePanel(snapshot) { persist(TripLedgerService.upsertVehicle(snapshot, it)) }
-                AddTripPanel(snapshot) { persist(TripLedgerService.upsertTrip(snapshot, it)) }
-                DateRangePanel(
-                    fromDate = reviewFromDate,
-                    toDate = reviewToDate,
-                    onFromDateChange = { reviewFromDate = it },
-                    onToDateChange = { reviewToDate = it }
-                )
-                ReviewQueue(
-                    snapshot = snapshot,
-                    fromDate = reviewFromDate,
-                    toDate = reviewToDate,
-                    onClassify = { tripId, purpose, jobLabel, category ->
-                        persist(
-                            TripLedgerService.updateTripPurpose(
+                AppTabs(selectedTab = selectedTab, onSelect = { selectedTab = it })
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
+                    when (selectedTab) {
+                        AppTab.Trips -> {
+                            SummaryPanel(snapshot)
+                            AddTripPanel(snapshot) { persist(TripLedgerService.upsertTrip(snapshot, it)) }
+                            TripList(
                                 snapshot = snapshot,
-                                tripId = tripId,
-                                purpose = purpose,
-                                reviewNote = "Reviewed in QF Mileage",
-                                jobLabel = jobLabel,
-                                category = category
+                                onDelete = { persist(TripLedgerService.deleteTrip(snapshot, it)) }
                             )
-                        )
-                    },
-                    onDelete = { persist(TripLedgerService.deleteTrip(snapshot, it)) }
-                )
-                TripList(
-                    snapshot = snapshot,
-                    onDelete = { persist(TripLedgerService.deleteTrip(snapshot, it)) }
-                )
-                ExportPanel(exportMessage = exportMessage) {
-                    val csvFile = store.exportCsv(CsvMileageExporter.export(snapshot))
-                    shareFile(csvFile, "text/csv")
-                    exportMessage = "CSV ready: ${csvFile.name}"
-                }
-                BackupPanel(exportMessage = exportMessage) {
-                    val backupFile = store.exportBackup(snapshot)
-                    shareFile(backupFile, "application/json")
-                    exportMessage = "Backup ready: ${backupFile.name}"
+                        }
+
+                        AppTab.Review -> {
+                            DateRangePanel(
+                                fromDate = reviewFromDate,
+                                toDate = reviewToDate,
+                                onFromDateChange = { reviewFromDate = it },
+                                onToDateChange = { reviewToDate = it }
+                            )
+                            ReviewQueue(
+                                snapshot = snapshot,
+                                fromDate = reviewFromDate,
+                                toDate = reviewToDate,
+                                onClassify = { tripId, purpose, jobLabel, category ->
+                                    persist(
+                                        TripLedgerService.updateTripPurpose(
+                                            snapshot = snapshot,
+                                            tripId = tripId,
+                                            purpose = purpose,
+                                            reviewNote = "Reviewed in QF Mileage",
+                                            jobLabel = jobLabel,
+                                            category = category
+                                        )
+                                    )
+                                },
+                                onDelete = { persist(TripLedgerService.deleteTrip(snapshot, it)) }
+                            )
+                        }
+
+                        AppTab.Vehicles -> {
+                            AddVehiclePanel(
+                                snapshot = snapshot,
+                                onSave = { persist(TripLedgerService.upsertVehicle(snapshot, it)) },
+                                onDelete = { persist(TripLedgerService.deleteVehicle(snapshot, it)) }
+                            )
+                        }
+
+                        AppTab.Export -> {
+                            ExportPanel(exportMessage = exportMessage) {
+                                val csvFile = store.exportCsv(CsvMileageExporter.export(snapshot))
+                                shareFile(csvFile, "text/csv")
+                                exportMessage = "CSV ready: ${csvFile.name}"
+                            }
+                            BackupPanel(exportMessage = exportMessage) {
+                                val backupFile = store.exportBackup(snapshot)
+                                shareFile(backupFile, "application/json")
+                                exportMessage = "Backup ready: ${backupFile.name}"
+                            }
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+private enum class AppTab(val label: String) {
+    Trips("Trips"),
+    Review("Review"),
+    Vehicles("Vehicles"),
+    Export("Export")
+}
+
+@Composable
+private fun AppTabs(selectedTab: AppTab, onSelect: (AppTab) -> Unit) {
+    val tabs = AppTab.entries
+    PrimaryTabRow(selectedTabIndex = tabs.indexOf(selectedTab)) {
+        tabs.forEach { tab ->
+            Tab(
+                selected = selectedTab == tab,
+                onClick = { onSelect(tab) },
+                text = { Text(tab.label) }
+            )
         }
     }
 }
@@ -168,10 +217,21 @@ private fun SummaryPanel(snapshot: LedgerSnapshot) {
 }
 
 @Composable
-private fun AddVehiclePanel(snapshot: LedgerSnapshot, onSave: (Vehicle) -> Unit) {
+private fun AddVehiclePanel(snapshot: LedgerSnapshot, onSave: (Vehicle) -> Unit, onDelete: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
     Section(title = "Vehicles") {
-        snapshot.vehicles.forEach { Text("- ${it.displayName}") }
+        if (snapshot.vehicles.isEmpty()) {
+            Text("No vehicles yet.")
+        } else {
+            snapshot.vehicles.forEach { vehicle ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                    Text(vehicle.displayName, modifier = Modifier.weight(1f))
+                    Button(onClick = { onDelete(vehicle.id) }) {
+                        Text("Delete")
+                    }
+                }
+            }
+        }
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
