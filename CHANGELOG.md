@@ -33,3 +33,8 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 - detail: Expands manual trip entry to capture explicit date, start time, end time, start point, and end point.
 - detail: Adds job and category fields to CSV exports for downstream ERPNext-ready classification.
 - detail: Updates shared tests and documentation for the v0.4.0 review-classification workflow.
+
+## 0.4.1 - 2026-05-27
+
+- patch: fix Android system bar overlap.
+- detail: Applies safe drawing insets to the main Compose scroll layout so content no longer bleeds into the top status bar or bottom system gesture area.
