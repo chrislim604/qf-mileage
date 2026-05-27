@@ -86,6 +86,8 @@ class LocalLedgerStore(context: Context) {
                 source = TripSource.valueOf(item.getString("source")),
                 vehicleId = item.optString("vehicleId").ifBlank { null },
                 purpose = TripPurpose.valueOf(item.getString("purpose")),
+                jobLabel = item.optString("jobLabel").ifBlank { null },
+                category = item.optString("category").ifBlank { null },
                 evidenceNote = item.getString("evidenceNote"),
                 adjustmentNote = item.optString("adjustmentNote").ifBlank { null }
             )
@@ -124,6 +126,8 @@ class LocalLedgerStore(context: Context) {
                     .put("source", trip.source.name)
                     .put("vehicleId", trip.vehicleId.orEmpty())
                     .put("purpose", trip.purpose.name)
+                    .put("jobLabel", trip.jobLabel.orEmpty())
+                    .put("category", trip.category.orEmpty())
                     .put("evidenceNote", trip.evidenceNote)
                     .put("adjustmentNote", trip.adjustmentNote.orEmpty())
             )

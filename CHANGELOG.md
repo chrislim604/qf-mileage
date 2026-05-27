@@ -24,3 +24,12 @@ All notable changes are tracked here. Versioning follows SemVer and is part of t
 - detail: Adds Android FileProvider support and share-sheet export for CRA-style CSV logbooks and JSON backups.
 - detail: Adds local corrupt-ledger recovery so malformed private storage is preserved and the app can start cleanly.
 - detail: Uses Android BuildConfig version metadata for the app header instead of a hardcoded version string.
+
+## 0.4.0 - 2026-05-27
+
+- minor: add date-range review and job/category tagging.
+- detail: Adds a review date-range panel so pending and mixed trips can be reviewed for a targeted period.
+- detail: Adds job/client and category labels to reviewed trips and persists those labels in the local ledger.
+- detail: Expands manual trip entry to capture explicit date, start time, end time, start point, and end point.
+- detail: Adds job and category fields to CSV exports for downstream ERPNext-ready classification.
+- detail: Updates shared tests and documentation for the v0.4.0 review-classification workflow.

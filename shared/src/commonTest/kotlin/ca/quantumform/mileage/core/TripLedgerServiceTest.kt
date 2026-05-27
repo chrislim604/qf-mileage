@@ -3,6 +3,7 @@ package ca.quantumform.mileage.core
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
 class TripLedgerServiceTest {
@@ -36,7 +37,7 @@ class TripLedgerServiceTest {
 
         val csv = CsvMileageExporter.export(snapshot)
 
-        assertTrue(csv.contains("date,origin,destination,vehicle,purpose,kilometres"))
+        assertTrue(csv.contains("date,origin,destination,vehicle,job,category,purpose,kilometres"))
         assertTrue(csv.contains("\"Client, Warehouse\""))
         assertTrue(csv.contains("Work vehicle"))
     }
@@ -49,25 +50,45 @@ class TripLedgerServiceTest {
             snapshot = snapshot,
             tripId = "1",
             purpose = TripPurpose.Business,
-            reviewNote = "Client visit"
+            reviewNote = "Client visit",
+            jobLabel = "Warehouse install",
+            category = "Client work"
         )
 
         assertEquals(TripPurpose.Business, classified.trips.single().purpose)
+        assertEquals("Warehouse install", classified.trips.single().jobLabel)
+        assertEquals("Client work", classified.trips.single().category)
         assertEquals("Client visit", classified.trips.single().adjustmentNote)
 
         val empty = TripLedgerService.deleteTrip(classified, "1")
         assertEquals(0, empty.trips.size)
     }
 
+    @Test
+    fun tripsCanBeFilteredByDateRangeForReview() {
+        val snapshot = LedgerSnapshot(
+            trips = listOf(
+                trip("1", 8.0, TripPurpose.NeedsReview, startedAt = "2026-05-20T16:00:00Z"),
+                trip("2", 9.0, TripPurpose.NeedsReview, startedAt = "2026-05-25T16:00:00Z"),
+                trip("3", 10.0, TripPurpose.NeedsReview, startedAt = "2026-05-30T16:00:00Z")
+            )
+        )
+
+        val filtered = TripLedgerService.tripsInDateRange(snapshot, "2026-05-21", "2026-05-29")
+
+        assertEquals(listOf("2"), filtered.map { it.id })
+    }
+
     private fun trip(
         id: String,
         kilometres: Double,
         purpose: TripPurpose,
-        destination: String = "Client"
+        destination: String = "Client",
+        startedAt: String = "2026-05-25T16:00:00Z"
     ) = TripLeg(
         id = id,
-        startedAt = Instant.parse("2026-05-25T16:00:00Z"),
-        endedAt = Instant.parse("2026-05-25T16:30:00Z"),
+        startedAt = Instant.parse(startedAt),
+        endedAt = Instant.parse(startedAt).plus(30.minutes),
         originLabel = "Office",
         destinationLabel = destination,
         kilometres = kilometres,

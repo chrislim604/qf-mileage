@@ -39,7 +39,9 @@ object TripLedgerService {
         snapshot: LedgerSnapshot,
         tripId: String,
         purpose: TripPurpose,
-        reviewNote: String
+        reviewNote: String,
+        jobLabel: String? = null,
+        category: String? = null
     ): LedgerSnapshot {
         val trips = snapshot.trips.map { trip ->
             if (trip.id != tripId) {
@@ -47,6 +49,8 @@ object TripLedgerService {
             } else {
                 trip.copy(
                     purpose = purpose,
+                    jobLabel = jobLabel?.ifBlank { null } ?: trip.jobLabel,
+                    category = category?.ifBlank { null } ?: trip.category,
                     adjustmentNote = reviewNote.ifBlank { trip.adjustmentNote }
                 )
             }
@@ -56,5 +60,14 @@ object TripLedgerService {
 
     fun deleteTrip(snapshot: LedgerSnapshot, tripId: String): LedgerSnapshot {
         return snapshot.copy(trips = snapshot.trips.filterNot { it.id == tripId })
+    }
+
+    fun tripsInDateRange(snapshot: LedgerSnapshot, fromDate: String?, toDate: String?): List<TripLeg> {
+        return snapshot.trips.filter { trip ->
+            val tripDate = trip.startedAt.toString().take(10)
+            val afterStart = fromDate.isNullOrBlank() || tripDate >= fromDate
+            val beforeEnd = toDate.isNullOrBlank() || tripDate <= toDate
+            afterStart && beforeEnd
+        }
     }
 }

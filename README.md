@@ -9,7 +9,7 @@ The launcher name is intentionally short: `QF Mileage`. The planned public store
 
 ## Current Status
 
-Version `0.3.0` is the more complete local ledger MVP. It establishes:
+Version `0.4.0` is the review-classification MVP. It establishes:
 
 - Kotlin Multiplatform shared core for mileage rules and future portability.
 - Native Android app shell with free and paid product flavors.
@@ -17,8 +17,9 @@ Version `0.3.0` is the more complete local ledger MVP. It establishes:
 - Backup, route provider, and ERPNext export contracts.
 - Public-repo documentation, versioning, GitHub templates, and release hygiene.
 - File-backed on-device trip ledger storage.
-- Android screens for vehicles, manual trips, review queue, trip list, and CSV export.
-- Review actions for classifying pending trips as business or personal.
+- Android screens for vehicles, manual trips, date-range review, trip list, and CSV export.
+- Manual trip entry by date, start time, end time, start point, and end point.
+- Review actions for classifying pending trips as business or personal with job/client and category labels.
 - Trip deletion from review and ledger views.
 - Android share-sheet export for CSV logbooks and JSON backups.
 - Corrupt local ledger recovery by preserving the bad file and starting clean.
@@ -29,7 +30,7 @@ The app is not store-ready yet. It does not yet connect to live Google Routes, G
 
 MVP capabilities:
 
-- Manual trip entry.
+- Manual trip entry by date, time, start point, end point, vehicle, job/client, and category.
 - Local trip and vehicle persistence.
 - Local CRA-style CSV export and JSON backup sharing.
 - Google Maps Timeline-assisted import and review.
@@ -78,7 +79,7 @@ ANDROID_HOME=/opt/homebrew/share/android-commandlinetools node scripts/run-gradl
 
 ## Local Ledger MVP
 
-The Android app currently persists data to `qf-mileage-ledger.json` in private app storage. CSV exports are written to `qf-mileage-logbook.csv`, JSON backups are written to `qf-mileage-backup.json`, and both can be shared through Android's share sheet. This keeps the first MVP simple and local-first while preserving the future path to SQLDelight/Room, encrypted Drive backups, and ERPNext sync.
+The Android app currently persists data to `qf-mileage-ledger.json` in private app storage. CSV exports are written to `qf-mileage-logbook.csv`, JSON backups are written to `qf-mileage-backup.json`, and both can be shared through Android's share sheet. Review can be narrowed to a target date range, and approved trips can carry job/client and category labels for later ERPNext mapping. This keeps the first MVP simple and local-first while preserving the future path to SQLDelight/Room, encrypted Drive backups, and ERPNext sync.
 
 ## Versioning
 

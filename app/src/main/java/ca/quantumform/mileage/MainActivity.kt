@@ -42,8 +42,12 @@ import ca.quantumform.mileage.core.TripPurpose
 import ca.quantumform.mileage.core.TripSource
 import ca.quantumform.mileage.core.Vehicle
 import java.io.File
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.LocalTime
+import java.time.ZoneOffset
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.minutes
+import kotlin.time.Instant
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,6 +75,8 @@ class MainActivity : ComponentActivity() {
 private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> Unit) {
     var snapshot by remember { mutableStateOf(store.load()) }
     var exportMessage by remember { mutableStateOf<String?>(null) }
+    var reviewFromDate by remember { mutableStateOf(LocalDate.now().withDayOfMonth(1).toString()) }
+    var reviewToDate by remember { mutableStateOf(LocalDate.now().toString()) }
     val status = MileageAppStatus(
         displayName = "QF Mileage",
         version = BuildConfig.VERSION_NAME,
@@ -94,15 +100,25 @@ private fun QfMileageApp(store: LocalLedgerStore, shareFile: (File, String) -> U
                 SummaryPanel(snapshot)
                 AddVehiclePanel(snapshot) { persist(TripLedgerService.upsertVehicle(snapshot, it)) }
                 AddTripPanel(snapshot) { persist(TripLedgerService.upsertTrip(snapshot, it)) }
+                DateRangePanel(
+                    fromDate = reviewFromDate,
+                    toDate = reviewToDate,
+                    onFromDateChange = { reviewFromDate = it },
+                    onToDateChange = { reviewToDate = it }
+                )
                 ReviewQueue(
                     snapshot = snapshot,
-                    onClassify = { tripId, purpose ->
+                    fromDate = reviewFromDate,
+                    toDate = reviewToDate,
+                    onClassify = { tripId, purpose, jobLabel, category ->
                         persist(
                             TripLedgerService.updateTripPurpose(
                                 snapshot = snapshot,
                                 tripId = tripId,
                                 purpose = purpose,
-                                reviewNote = "Reviewed in QF Mileage"
+                                reviewNote = "Reviewed in QF Mileage",
+                                jobLabel = jobLabel,
+                                category = category
                             )
                         )
                     },
@@ -172,12 +188,20 @@ private fun AddVehiclePanel(snapshot: LedgerSnapshot, onSave: (Vehicle) -> Unit)
 
 @Composable
 private fun AddTripPanel(snapshot: LedgerSnapshot, onSave: (TripLeg) -> Unit) {
+    val now = LocalDateTime.now()
+    var tripDate by remember { mutableStateOf(now.toLocalDate().toString()) }
+    var startTime by remember { mutableStateOf(now.minusMinutes(30).toLocalTime().formatTime()) }
+    var endTime by remember { mutableStateOf(now.toLocalTime().formatTime()) }
     var origin by remember { mutableStateOf("Home office") }
     var destination by remember { mutableStateOf("") }
     var kilometres by remember { mutableStateOf("") }
     var purpose by remember { mutableStateOf(TripPurpose.NeedsReview) }
+    var jobLabel by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("Manual entry") }
     var selectedVehicleId by remember(snapshot.vehicles) { mutableStateOf(snapshot.vehicles.firstOrNull()?.id) }
+    val parsedStart = parseLocalInstant(tripDate, startTime)
+    val parsedEnd = parseLocalInstant(tripDate, endTime)
 
     Section(title = "Add manual trip") {
         VehicleButtons(
@@ -185,8 +209,11 @@ private fun AddTripPanel(snapshot: LedgerSnapshot, onSave: (TripLeg) -> Unit) {
             selectedVehicleId = selectedVehicleId,
             onChange = { selectedVehicleId = it }
         )
-        OutlinedTextField(origin, { origin = it }, label = { Text("Origin") }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(destination, { destination = it }, label = { Text("Destination") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(tripDate, { tripDate = it }, label = { Text("Trip date (YYYY-MM-DD)") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(startTime, { startTime = it }, label = { Text("Start time (HH:MM)") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(endTime, { endTime = it }, label = { Text("End time (HH:MM)") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(origin, { origin = it }, label = { Text("Start point") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(destination, { destination = it }, label = { Text("End point") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(
             value = kilometres,
             onValueChange = { kilometres = it },
@@ -195,34 +222,73 @@ private fun AddTripPanel(snapshot: LedgerSnapshot, onSave: (TripLeg) -> Unit) {
             modifier = Modifier.fillMaxWidth()
         )
         PurposeButtons(purpose = purpose, onChange = { purpose = it })
+        OutlinedTextField(jobLabel, { jobLabel = it }, label = { Text("Job / client") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(category, { category = it }, label = { Text("Category") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(note, { note = it }, label = { Text("Evidence / review note") }, modifier = Modifier.fillMaxWidth())
         Button(
-            enabled = destination.isNotBlank() && kilometres.toDoubleOrNull() != null,
+            enabled = destination.isNotBlank() &&
+                kilometres.toDoubleOrNull() != null &&
+                parsedStart != null &&
+                parsedEnd != null &&
+                parsedEnd >= parsedStart,
             onClick = {
-                val now = Clock.System.now()
+                val startedAt = parsedStart ?: Clock.System.now()
+                val endedAt = parsedEnd ?: startedAt
                 onSave(
                     TripLeg(
-                        id = "trip-${now.toEpochMilliseconds()}",
-                        startedAt = now.minus(30.minutes),
-                        endedAt = now,
+                        id = "trip-${Clock.System.now().toEpochMilliseconds()}",
+                        startedAt = startedAt,
+                        endedAt = endedAt,
                         originLabel = origin.trim(),
                         destinationLabel = destination.trim(),
                         kilometres = kilometres.toDouble(),
                         source = TripSource.Manual,
                         vehicleId = selectedVehicleId,
                         purpose = purpose,
+                        jobLabel = jobLabel.trim().ifBlank { null },
+                        category = category.trim().ifBlank { null },
                         evidenceNote = note.trim().ifBlank { "Manual entry" },
                         adjustmentNote = if (purpose == TripPurpose.Mixed || purpose == TripPurpose.NeedsReview) note else null
                     )
                 )
                 destination = ""
                 kilometres = ""
+                jobLabel = ""
+                category = ""
                 purpose = TripPurpose.NeedsReview
                 note = "Manual entry"
             }
         ) {
             Text("Save trip")
         }
+        if (parsedStart == null || parsedEnd == null) {
+            Text("Use date YYYY-MM-DD and times HH:MM.")
+        } else if (parsedEnd < parsedStart) {
+            Text("End time must be after start time.")
+        }
+    }
+}
+
+@Composable
+private fun DateRangePanel(
+    fromDate: String,
+    toDate: String,
+    onFromDateChange: (String) -> Unit,
+    onToDateChange: (String) -> Unit
+) {
+    Section(title = "Review date range") {
+        OutlinedTextField(
+            value = fromDate,
+            onValueChange = onFromDateChange,
+            label = { Text("From date (YYYY-MM-DD)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = toDate,
+            onValueChange = onToDateChange,
+            label = { Text("To date (YYYY-MM-DD)") },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 
@@ -262,22 +328,30 @@ private fun PurposeButtons(purpose: TripPurpose, onChange: (TripPurpose) -> Unit
 @Composable
 private fun ReviewQueue(
     snapshot: LedgerSnapshot,
-    onClassify: (String, TripPurpose) -> Unit,
+    fromDate: String,
+    toDate: String,
+    onClassify: (String, TripPurpose, String, String) -> Unit,
     onDelete: (String) -> Unit
 ) {
-    val reviewTrips = snapshot.trips.filter { it.purpose == TripPurpose.NeedsReview || it.purpose == TripPurpose.Mixed }
+    val reviewTrips = TripLedgerService.tripsInDateRange(snapshot, fromDate, toDate)
+        .filter { it.purpose == TripPurpose.NeedsReview || it.purpose == TripPurpose.Mixed }
     Section(title = "Review queue") {
         if (reviewTrips.isEmpty()) {
             Text("No trips need review.")
         } else {
             reviewTrips.forEach {
+                var jobLabel by remember(it.id, it.jobLabel) { mutableStateOf(it.jobLabel.orEmpty()) }
+                var category by remember(it.id, it.category) { mutableStateOf(it.category.orEmpty()) }
                 Text("${it.originLabel} to ${it.destinationLabel} - ${it.kilometres} km - ${it.purpose.name}")
+                Text("${it.startedAt.toString().take(16)} to ${it.endedAt.toString().take(16)}")
                 Text("Note: ${it.adjustmentNote ?: it.evidenceNote}")
+                OutlinedTextField(jobLabel, { jobLabel = it }, label = { Text("Job / client") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(category, { category = it }, label = { Text("Category") }, modifier = Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                    Button(onClick = { onClassify(it.id, TripPurpose.Business) }) {
+                    Button(onClick = { onClassify(it.id, TripPurpose.Business, jobLabel, category) }) {
                         Text("Business")
                     }
-                    Button(onClick = { onClassify(it.id, TripPurpose.Personal) }) {
+                    Button(onClick = { onClassify(it.id, TripPurpose.Personal, jobLabel, category) }) {
                         Text("Personal")
                     }
                     Button(onClick = { onDelete(it.id) }) {
@@ -300,6 +374,9 @@ private fun TripList(snapshot: LedgerSnapshot, onDelete: (String) -> Unit) {
                 val vehicleName = snapshot.vehicles.firstOrNull { vehicle -> vehicle.id == it.vehicleId }?.displayName ?: "No vehicle"
                 Text("${it.startedAt.toString().take(10)} - ${it.originLabel} to ${it.destinationLabel}")
                 Text("${it.kilometres} km - ${vehicleName} - ${it.purpose.name} - ${it.source.name}")
+                if (!it.jobLabel.isNullOrBlank() || !it.category.isNullOrBlank()) {
+                    Text("Job: ${it.jobLabel.orEmpty()} - Category: ${it.category.orEmpty()}")
+                }
                 Button(onClick = { onDelete(it.id) }) {
                     Text("Delete trip")
                 }
@@ -342,4 +419,20 @@ private fun Section(title: String, content: @Composable ColumnScope.() -> Unit) 
         Text(text = title, style = MaterialTheme.typography.titleLarge)
         content()
     }
+}
+
+private fun parseLocalInstant(date: String, time: String): Instant? {
+    return try {
+        val localDate = LocalDate.parse(date.trim())
+        val localTime = LocalTime.parse(time.trim())
+        val localDateTime = LocalDateTime.of(localDate, localTime)
+        // Keep the typed ledger date stable for CSV exports and date-range review.
+        Instant.fromEpochMilliseconds(localDateTime.toInstant(ZoneOffset.UTC).toEpochMilli())
+    } catch (error: Exception) {
+        null
+    }
+}
+
+private fun LocalTime.formatTime(): String {
+    return "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
 }

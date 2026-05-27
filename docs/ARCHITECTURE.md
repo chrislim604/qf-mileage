@@ -40,7 +40,7 @@ Future iOS adapters:
 5. User approves purpose, treatment, notes, and claimable distance.
 6. Export CRA-style evidence, create encrypted backup, or sync to ERPNext later.
 
-The v0.3.0 implementation supports manual entry, local persistence, review classification, trip deletion, local CSV export sharing, and JSON backup sharing. Timeline import, route reconstruction, Drive backup, ads, billing, and ERPNext sync remain adapter work after this vertical slice.
+The v0.4.0 implementation supports explicit date/time manual entry, local persistence, date-range review filtering, job/client and category classification, trip deletion, local CSV export sharing, and JSON backup sharing. Timeline import, route reconstruction, Drive backup, ads, billing, and ERPNext sync remain adapter work after this vertical slice.
 
 ## Privacy Boundary
 

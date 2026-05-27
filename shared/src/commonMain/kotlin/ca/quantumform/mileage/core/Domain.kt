@@ -54,6 +54,8 @@ data class TripLeg(
     val source: TripSource,
     val vehicleId: String?,
     val purpose: TripPurpose,
+    val jobLabel: String? = null,
+    val category: String? = null,
     val evidenceNote: String,
     val adjustmentNote: String? = null
 )
